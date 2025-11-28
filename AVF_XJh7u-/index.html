@@ -1,0 +1,927 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+<meta name="description" content=""/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<title>Logback 完整使用指南 | n1es</title>
+
+<link rel="shortcut icon" href="https://n1es.org/favicon.ico?v=1764331894685">
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://n1es.org/styles/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dockerfile.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dart.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>
+<!-- DEMO JS -->
+<!--<script src="media/scripts/index.js"></script>-->
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css">
+</head>
+<body>
+<div class="main gt-bg-theme-color-first">
+    <nav class="navbar navbar-expand-lg">
+    <div class="navbar-brand">
+        <img class="user-avatar" src="/images/avatar.png" alt="头像">
+        <div class="site-name gt-c-content-color-first">
+            n1es
+        </div>
+    </div>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars gt-c-content-color-first" style="font-size: 18px"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="navbar-nav mr-auto" style="text-align: center">
+            
+                <div class="nav-item">
+                    
+                        <a href="/" class="menu gt-a-link">
+                            首页
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/archives" class="menu gt-a-link">
+                            归档
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/tags" class="menu gt-a-link">
+                            标签
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/abouts" class="menu gt-a-link">
+                            关于
+                        </a>
+                    
+                </div>
+            
+        </div>
+        <div style="text-align: center">
+            <form id="gridea-search-form" style="position: relative" data-update="1764331894685" action="/search/index.html">
+                <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+                <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <div class="post-container">
+        <div class="post-detail gt-bg-theme-color-second">
+            <article class="gt-post-content">
+                <h2 class="post-title">
+                    Logback 完整使用指南
+                </h2>
+                <div class="post-info">
+                    <time class="post-time gt-c-content-color-first">
+                        · 2025-09-09 ·
+                    </time>
+                    
+                </div>
+                
+                <div class="post-content-wrapper">
+                    <div class="post-content" v-pre>
+                        <p><img src="https://n1es.org/post-images/1757418625485.png" alt="" loading="lazy">## 1. 简介</p>
+<p>Logback是由log4j的创始人Ceki Gülcü设计的日志框架，是SLF4J的原生实现。它分为三个模块：</p>
+<ul>
+<li><strong>logback-core</strong>: 核心模块，为其他两个模块奠定基础</li>
+<li><strong>logback-classic</strong>: 完整实现了SLF4J API</li>
+<li><strong>logback-access</strong>: 与Servlet容器集成，提供HTTP访问日志功能</li>
+</ul>
+<h2 id="2-依赖配置">2. 依赖配置</h2>
+<h3 id="maven依赖">Maven依赖</h3>
+<pre><code class="language-xml">&lt;dependencies&gt;
+    &lt;!-- Logback Classic (包含core) --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
+        &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
+        &lt;version&gt;1.4.14&lt;/version&gt;
+    &lt;/dependency&gt;
+    
+    &lt;!-- SLF4J API (通常已被logback-classic包含) --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+        &lt;version&gt;2.0.9&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+<h3 id="gradle依赖">Gradle依赖</h3>
+<pre><code class="language-gradle">dependencies {
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+}
+</code></pre>
+<h2 id="3-基本使用">3. 基本使用</h2>
+<h3 id="31-简单示例">3.1 简单示例</h3>
+<pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class LogbackExample {
+    private static final Logger logger = LoggerFactory.getLogger(LogbackExample.class);
+    
+    public static void main(String[] args) {
+        logger.trace(&quot;这是TRACE级别日志&quot;);
+        logger.debug(&quot;这是DEBUG级别日志&quot;);
+        logger.info(&quot;这是INFO级别日志&quot;);
+        logger.warn(&quot;这是WARN级别日志&quot;);
+        logger.error(&quot;这是ERROR级别日志&quot;);
+        
+        // 带参数的日志
+        String name = &quot;张三&quot;;
+        int age = 25;
+        logger.info(&quot;用户信息: 姓名={}, 年龄={}&quot;, name, age);
+        
+        // 异常日志
+        try {
+            int result = 10 / 0;
+        } catch (Exception e) {
+            logger.error(&quot;计算出错&quot;, e);
+        }
+    }
+}
+</code></pre>
+<h3 id="32-日志级别">3.2 日志级别</h3>
+<p>Logback支持以下日志级别（从低到高）：</p>
+<ul>
+<li><strong>TRACE</strong>: 最详细的信息，通常只在开发时使用</li>
+<li><strong>DEBUG</strong>: 调试信息</li>
+<li><strong>INFO</strong>: 一般信息</li>
+<li><strong>WARN</strong>: 警告信息</li>
+<li><strong>ERROR</strong>: 错误信息</li>
+</ul>
+<h2 id="4-配置文件">4. 配置文件</h2>
+<h3 id="41-配置文件查找顺序">4.1 配置文件查找顺序</h3>
+<p>Logback按以下顺序查找配置文件：</p>
+<ol>
+<li><code>logback-test.xml</code> (测试环境)</li>
+<li><code>logback.groovy</code></li>
+<li><code>logback.xml</code></li>
+<li>如果都没找到，使用默认配置</li>
+</ol>
+<h3 id="42-基本配置示例-logbackxml">4.2 基本配置示例 (logback.xml)</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;!-- 控制台输出 --&gt;
+    &lt;appender name=&quot;CONSOLE&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 文件输出 --&gt;
+    &lt;appender name=&quot;FILE&quot; class=&quot;ch.qos.logback.core.FileAppender&quot;&gt;
+        &lt;file&gt;logs/application.log&lt;/file&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 根日志器 --&gt;
+    &lt;root level=&quot;INFO&quot;&gt;
+        &lt;appender-ref ref=&quot;CONSOLE&quot;/&gt;
+        &lt;appender-ref ref=&quot;FILE&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="5-高级配置">5. 高级配置</h2>
+<h3 id="51-滚动文件配置">5.1 滚动文件配置</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;!-- 滚动文件输出 --&gt;
+    &lt;appender name=&quot;ROLLING_FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;logs/application.log&lt;/file&gt;
+        
+        &lt;!-- 滚动策略 --&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&quot;&gt;
+            &lt;!-- 文件名模式 --&gt;
+            &lt;fileNamePattern&gt;logs/application.%d{yyyy-MM-dd}.%i.log&lt;/fileNamePattern&gt;
+            &lt;!-- 保留天数 --&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;!-- 总大小限制 --&gt;
+            &lt;totalSizeCap&gt;1GB&lt;/totalSizeCap&gt;
+            
+            &lt;!-- 按大小分割 --&gt;
+            &lt;timeBasedFileNamingAndTriggeringPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP&quot;&gt;
+                &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;/timeBasedFileNamingAndTriggeringPolicy&gt;
+        &lt;/rollingPolicy&gt;
+        
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;root level=&quot;INFO&quot;&gt;
+        &lt;appender-ref ref=&quot;ROLLING_FILE&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h3 id="52-异步日志配置">5.2 异步日志配置</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;!-- 同步文件输出 --&gt;
+    &lt;appender name=&quot;FILE&quot; class=&quot;ch.qos.logback.core.FileAppender&quot;&gt;
+        &lt;file&gt;logs/application.log&lt;/file&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 异步包装器 --&gt;
+    &lt;appender name=&quot;ASYNC_FILE&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;!-- 队列大小 --&gt;
+        &lt;queueSize&gt;512&lt;/queueSize&gt;
+        &lt;!-- 丢弃阈值 --&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;!-- 包含调用者信息 --&gt;
+        &lt;includeCallerData&gt;false&lt;/includeCallerData&gt;
+        &lt;!-- 引用同步appender --&gt;
+        &lt;appender-ref ref=&quot;FILE&quot;/&gt;
+    &lt;/appender&gt;
+    
+    &lt;root level=&quot;INFO&quot;&gt;
+        &lt;appender-ref ref=&quot;ASYNC_FILE&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h3 id="53-多环境配置">5.3 多环境配置</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;!-- 定义属性 --&gt;
+    &lt;property name=&quot;LOG_HOME&quot; value=&quot;logs&quot;/&gt;
+    &lt;property name=&quot;APP_NAME&quot; value=&quot;myapp&quot;/&gt;
+    
+    &lt;!-- 根据环境变量选择配置 --&gt;
+    &lt;springProfile name=&quot;dev&quot;&gt;
+        &lt;appender name=&quot;CONSOLE&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;
+            &lt;encoder&gt;
+                &lt;pattern&gt;%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+            &lt;/encoder&gt;
+        &lt;/appender&gt;
+        &lt;root level=&quot;DEBUG&quot;&gt;
+            &lt;appender-ref ref=&quot;CONSOLE&quot;/&gt;
+        &lt;/root&gt;
+    &lt;/springProfile&gt;
+    
+    &lt;springProfile name=&quot;prod&quot;&gt;
+        &lt;appender name=&quot;FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+            &lt;file&gt;${LOG_HOME}/${APP_NAME}.log&lt;/file&gt;
+            &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&quot;&gt;
+                &lt;fileNamePattern&gt;${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.log&lt;/fileNamePattern&gt;
+                &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;/rollingPolicy&gt;
+            &lt;encoder&gt;
+                &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+            &lt;/encoder&gt;
+        &lt;/appender&gt;
+        &lt;root level=&quot;INFO&quot;&gt;
+            &lt;appender-ref ref=&quot;FILE&quot;/&gt;
+        &lt;/root&gt;
+    &lt;/springProfile&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="6-常用模式和格式">6. 常用模式和格式</h2>
+<h3 id="61-日志格式说明">6.1 日志格式说明</h3>
+<ul>
+<li><code>%d{pattern}</code>: 日期时间</li>
+<li><code>%thread</code>: 线程名</li>
+<li><code>%level</code> / <code>%-5level</code>: 日志级别</li>
+<li><code>%logger{length}</code>: Logger名称</li>
+<li><code>%msg</code>: 日志消息</li>
+<li><code>%n</code>: 换行符</li>
+<li><code>%class</code>: 类名</li>
+<li><code>%method</code>: 方法名</li>
+<li><code>%line</code>: 行号</li>
+<li><code>%file</code>: 文件名</li>
+</ul>
+<h3 id="62-常用格式模板">6.2 常用格式模板</h3>
+<pre><code class="language-xml">&lt;!-- 简洁格式 --&gt;
+&lt;pattern&gt;%d{HH:mm:ss} %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+
+&lt;!-- 详细格式 --&gt;
+&lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%file:%line] - %msg%n&lt;/pattern&gt;
+
+&lt;!-- JSON格式 --&gt;
+&lt;pattern&gt;{&quot;timestamp&quot;:&quot;%d{yyyy-MM-dd HH:mm:ss.SSS}&quot;,&quot;level&quot;:&quot;%-5level&quot;,&quot;thread&quot;:&quot;%thread&quot;,&quot;logger&quot;:&quot;%logger&quot;,&quot;message&quot;:&quot;%msg&quot;}%n&lt;/pattern&gt;
+
+&lt;!-- 彩色输出（控制台） --&gt;
+&lt;pattern&gt;%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{36}) - %msg%n&lt;/pattern&gt;
+</code></pre>
+<h2 id="7-过滤器和条件配置">7. 过滤器和条件配置</h2>
+<h3 id="71-级别过滤器">7.1 级别过滤器</h3>
+<pre><code class="language-xml">&lt;appender name=&quot;ERROR_FILE&quot; class=&quot;ch.qos.logback.core.FileAppender&quot;&gt;
+    &lt;file&gt;logs/error.log&lt;/file&gt;
+    &lt;filter class=&quot;ch.qos.logback.classic.filter.LevelFilter&quot;&gt;
+        &lt;level&gt;ERROR&lt;/level&gt;
+        &lt;onMatch&gt;ACCEPT&lt;/onMatch&gt;
+        &lt;onMismatch&gt;DENY&lt;/onMismatch&gt;
+    &lt;/filter&gt;
+    &lt;encoder&gt;
+        &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+    &lt;/encoder&gt;
+&lt;/appender&gt;
+</code></pre>
+<h3 id="72-阈值过滤器">7.2 阈值过滤器</h3>
+<pre><code class="language-xml">&lt;appender name=&quot;WARN_FILE&quot; class=&quot;ch.qos.logback.core.FileAppender&quot;&gt;
+    &lt;file&gt;logs/warn.log&lt;/file&gt;
+    &lt;filter class=&quot;ch.qos.logback.classic.filter.ThresholdFilter&quot;&gt;
+        &lt;level&gt;WARN&lt;/level&gt;
+    &lt;/filter&gt;
+    &lt;encoder&gt;
+        &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+    &lt;/encoder&gt;
+&lt;/appender&gt;
+</code></pre>
+<h3 id="73-自定义过滤器">7.3 自定义过滤器</h3>
+<pre><code class="language-java">import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
+
+public class CustomFilter extends Filter&lt;ILoggingEvent&gt; {
+    @Override
+    public FilterReply decide(ILoggingEvent event) {
+        if (event.getMessage().contains(&quot;sensitive&quot;)) {
+            return FilterReply.DENY;
+        }
+        return FilterReply.NEUTRAL;
+    }
+}
+</code></pre>
+<h2 id="8-mdc-mapped-diagnostic-context-使用">8. MDC (Mapped Diagnostic Context) 使用</h2>
+<h3 id="81-mdc基本用法">8.1 MDC基本用法</h3>
+<pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+public class MDCExample {
+    private static final Logger logger = LoggerFactory.getLogger(MDCExample.class);
+    
+    public void processUser(String userId) {
+        // 设置MDC
+        MDC.put(&quot;userId&quot;, userId);
+        MDC.put(&quot;requestId&quot;, UUID.randomUUID().toString());
+        
+        try {
+            logger.info(&quot;开始处理用户请求&quot;);
+            // 业务逻辑
+            logger.info(&quot;用户处理完成&quot;);
+        } finally {
+            // 清理MDC
+            MDC.clear();
+        }
+    }
+}
+</code></pre>
+<h3 id="82-mdc配置格式">8.2 MDC配置格式</h3>
+<pre><code class="language-xml">&lt;encoder&gt;
+    &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId}] [%X{userId}] %logger{36} - %msg%n&lt;/pattern&gt;
+&lt;/encoder&gt;
+</code></pre>
+<h2 id="9-特定logger配置">9. 特定Logger配置</h2>
+<h3 id="91-包级别配置">9.1 包级别配置</h3>
+<pre><code class="language-xml">&lt;configuration&gt;
+    &lt;!-- 特定包的日志级别 --&gt;
+    &lt;logger name=&quot;com.example.service&quot; level=&quot;DEBUG&quot;/&gt;
+    &lt;logger name=&quot;com.example.dao&quot; level=&quot;WARN&quot;/&gt;
+    
+    &lt;!-- 第三方库日志控制 --&gt;
+    &lt;logger name=&quot;org.springframework&quot; level=&quot;WARN&quot;/&gt;
+    &lt;logger name=&quot;org.hibernate&quot; level=&quot;WARN&quot;/&gt;
+    &lt;logger name=&quot;org.apache.http&quot; level=&quot;INFO&quot;/&gt;
+    
+    &lt;!-- 关闭特定Logger的继承 --&gt;
+    &lt;logger name=&quot;com.example.noisy&quot; level=&quot;ERROR&quot; additivity=&quot;false&quot;&gt;
+        &lt;appender-ref ref=&quot;ERROR_FILE&quot;/&gt;
+    &lt;/logger&gt;
+    
+    &lt;root level=&quot;INFO&quot;&gt;
+        &lt;appender-ref ref=&quot;CONSOLE&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="10-实际应用示例">10. 实际应用示例</h2>
+<h3 id="101-spring-boot集成">10.1 Spring Boot集成</h3>
+<pre><code class="language-java">// application.yml
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework: WARN
+  pattern:
+    console: &quot;%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&quot;
+    file: &quot;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&quot;
+  file:
+    name: logs/application.log
+</code></pre>
+<h3 id="102-web应用日志配置">10.2 Web应用日志配置</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;property name=&quot;LOG_HOME&quot; value=&quot;logs&quot;/&gt;
+    
+    &lt;!-- 控制台输出 --&gt;
+    &lt;appender name=&quot;CONSOLE&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{requestId}] %cyan(%logger{36}) - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 应用日志 --&gt;
+    &lt;appender name=&quot;APP_FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${LOG_HOME}/app.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${LOG_HOME}/app.%d{yyyy-MM-dd}.%i.log&lt;/fileNamePattern&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;timeBasedFileNamingAndTriggeringPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP&quot;&gt;
+                &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;/timeBasedFileNamingAndTriggeringPolicy&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 错误日志 --&gt;
+    &lt;appender name=&quot;ERROR_FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${LOG_HOME}/error.log&lt;/file&gt;
+        &lt;filter class=&quot;ch.qos.logback.classic.filter.ThresholdFilter&quot;&gt;
+            &lt;level&gt;ERROR&lt;/level&gt;
+        &lt;/filter&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${LOG_HOME}/error.%d{yyyy-MM-dd}.log&lt;/fileNamePattern&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 业务日志 --&gt;
+    &lt;logger name=&quot;com.example.business&quot; level=&quot;INFO&quot; additivity=&quot;false&quot;&gt;
+        &lt;appender-ref ref=&quot;APP_FILE&quot;/&gt;
+    &lt;/logger&gt;
+    
+    &lt;!-- 第三方库 --&gt;
+    &lt;logger name=&quot;org.springframework&quot; level=&quot;WARN&quot;/&gt;
+    &lt;logger name=&quot;org.hibernate&quot; level=&quot;WARN&quot;/&gt;
+    
+    &lt;root level=&quot;INFO&quot;&gt;
+        &lt;appender-ref ref=&quot;CONSOLE&quot;/&gt;
+        &lt;appender-ref ref=&quot;APP_FILE&quot;/&gt;
+        &lt;appender-ref ref=&quot;ERROR_FILE&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="11-性能优化">11. 性能优化</h2>
+<h3 id="111-异步日志最佳实践">11.1 异步日志最佳实践</h3>
+<pre><code class="language-xml">&lt;!-- 高性能异步配置 --&gt;
+&lt;appender name=&quot;ASYNC_FILE&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+    &lt;queueSize&gt;1024&lt;/queueSize&gt;
+    &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+    &lt;includeCallerData&gt;false&lt;/includeCallerData&gt;
+    &lt;neverBlock&gt;true&lt;/neverBlock&gt;
+    &lt;appender-ref ref=&quot;FILE&quot;/&gt;
+&lt;/appender&gt;
+</code></pre>
+<h3 id="112-条件日志记录">11.2 条件日志记录</h3>
+<pre><code class="language-java">// 避免不必要的字符串拼接
+if (logger.isDebugEnabled()) {
+    logger.debug(&quot;复杂计算结果: {}&quot;, expensiveOperation());
+}
+
+// 使用参数化日志
+logger.info(&quot;用户 {} 执行了操作 {}&quot;, userId, operation);
+
+// 避免
+logger.info(&quot;用户 &quot; + userId + &quot; 执行了操作 &quot; + operation);
+</code></pre>
+<h2 id="12-最佳实践">12. 最佳实践</h2>
+<h3 id="121-logger声明">12.1 Logger声明</h3>
+<pre><code class="language-java">// 推荐：使用类名作为Logger名称
+private static final Logger logger = LoggerFactory.getLogger(MyClass.class);
+
+// 或者使用字符串（适用于静态工具类）
+private static final Logger logger = LoggerFactory.getLogger(&quot;com.example.util&quot;);
+</code></pre>
+<h3 id="122-日志级别使用指南">12.2 日志级别使用指南</h3>
+<pre><code class="language-java">public class LoggingBestPractices {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingBestPractices.class);
+    
+    public void demonstrateLogLevels() {
+        // ERROR: 系统错误，需要立即关注
+        logger.error(&quot;数据库连接失败&quot;, exception);
+        
+        // WARN: 潜在问题，但不影响系统运行
+        logger.warn(&quot;缓存未命中，使用数据库查询&quot;);
+        
+        // INFO: 重要的业务流程信息
+        logger.info(&quot;用户 {} 登录成功&quot;, userId);
+        
+        // DEBUG: 调试信息，生产环境通常关闭
+        logger.debug(&quot;方法参数: param1={}, param2={}&quot;, param1, param2);
+        
+        // TRACE: 最详细的跟踪信息
+        logger.trace(&quot;进入方法 processData()&quot;);
+    }
+}
+</code></pre>
+<h3 id="123-结构化日志">12.3 结构化日志</h3>
+<pre><code class="language-java">// 使用结构化的日志格式
+logger.info(&quot;用户操作 - 用户ID: {}, 操作: {}, 结果: {}, 耗时: {}ms&quot;, 
+    userId, operation, result, duration);
+
+// 使用MDC增加上下文信息
+MDC.put(&quot;traceId&quot;, traceId);
+MDC.put(&quot;userId&quot;, userId);
+logger.info(&quot;业务操作完成&quot;);
+</code></pre>
+<h2 id="13-常见问题和解决方案">13. 常见问题和解决方案</h2>
+<h3 id="131-日志文件权限问题">13.1 日志文件权限问题</h3>
+<pre><code class="language-bash"># 确保日志目录存在且有写权限
+mkdir -p logs
+chmod 755 logs
+</code></pre>
+<h3 id="132-日志文件过大问题">13.2 日志文件过大问题</h3>
+<pre><code class="language-xml">&lt;!-- 使用滚动策略控制文件大小 --&gt;
+&lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+    &lt;fileNamePattern&gt;logs/app.%d{yyyy-MM-dd}.%i.log&lt;/fileNamePattern&gt;
+    &lt;maxFileSize&gt;50MB&lt;/maxFileSize&gt;
+    &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+    &lt;totalSizeCap&gt;1GB&lt;/totalSizeCap&gt;
+&lt;/rollingPolicy&gt;
+</code></pre>
+<h3 id="133-内存泄漏问题">13.3 内存泄漏问题</h3>
+<pre><code class="language-java">// 在Web应用中正确清理MDC
+public class MDCCleanupFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, 
+                        FilterChain chain) throws IOException, ServletException {
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            MDC.clear(); // 重要：清理MDC避免内存泄漏
+        }
+    }
+}
+</code></pre>
+<h3 id="134-配置重载">13.4 配置重载</h3>
+<pre><code class="language-xml">&lt;!-- 启用配置文件自动重载 --&gt;
+&lt;configuration scan=&quot;true&quot; scanPeriod=&quot;30 seconds&quot;&gt;
+    &lt;!-- 配置内容 --&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="14-监控和调试">14. 监控和调试</h2>
+<h3 id="141-jmx监控">14.1 JMX监控</h3>
+<pre><code class="language-xml">&lt;configuration&gt;
+    &lt;!-- 启用JMX --&gt;
+    &lt;jmxConfigurator/&gt;
+    &lt;!-- 其他配置 --&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h3 id="142-状态监听器">14.2 状态监听器</h3>
+<pre><code class="language-xml">&lt;configuration&gt;
+    &lt;!-- 添加状态监听器 --&gt;
+    &lt;statusListener class=&quot;ch.qos.logback.core.status.OnConsoleStatusListener&quot;/&gt;
+    &lt;!-- 其他配置 --&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h3 id="143-调试配置">14.3 调试配置</h3>
+<pre><code class="language-xml">&lt;!-- 开启调试模式 --&gt;
+&lt;configuration debug=&quot;true&quot;&gt;
+    &lt;!-- 配置内容 --&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h2 id="15-与其他框架集成">15. 与其他框架集成</h2>
+<h3 id="151-spring-boot自动配置">15.1 Spring Boot自动配置</h3>
+<pre><code class="language-properties"># application.properties
+logging.level.com.example=DEBUG
+logging.pattern.console=%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+logging.file.name=logs/application.log
+logging.logback.rollingpolicy.max-file-size=100MB
+logging.logback.rollingpolicy.max-history=30
+</code></pre>
+<h3 id="152-与elk-stack集成">15.2 与ELK Stack集成</h3>
+<pre><code class="language-xml">&lt;!-- Logstash编码器 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;net.logstash.logback&lt;/groupId&gt;
+    &lt;artifactId&gt;logstash-logback-encoder&lt;/artifactId&gt;
+    &lt;version&gt;7.4&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<pre><code class="language-xml">&lt;appender name=&quot;LOGSTASH&quot; class=&quot;ch.qos.logback.core.FileAppender&quot;&gt;
+    &lt;file&gt;logs/logstash.json&lt;/file&gt;
+    &lt;encoder class=&quot;net.logstash.logback.encoder.LogstashEncoder&quot;&gt;
+        &lt;includeContext&gt;true&lt;/includeContext&gt;
+        &lt;includeMdc&gt;true&lt;/includeMdc&gt;
+        &lt;customFields&gt;{&quot;service&quot;:&quot;my-app&quot;}&lt;/customFields&gt;
+    &lt;/encoder&gt;
+&lt;/appender&gt;
+</code></pre>
+<h2 id="16-代码级配置">16. 代码级配置</h2>
+<p>Logback支持通过代码进行编程式配置，这在以下场景特别有用：</p>
+<ul>
+<li>
+<p>需要动态配置日志</p>
+</li>
+<li>
+<p>配置逻辑复杂，XML难以表达</p>
+</li>
+<li>
+<p>需要根据运行时条件调整配置</p>
+</li>
+<li>
+<p>集成到框架或库中</p>
+</li>
+<li>
+<p>需要更精细的控制</p>
+<pre><code class="language-java">import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
+
+private static RollingFileAppender createRollingFileAppender(LoggerContext context) {
+    RollingFileAppender rollingFileAppender = new RollingFileAppender();
+    rollingFileAppender.setContext(context);
+    rollingFileAppender.setName(&quot;ROLLING_FILE&quot;);
+    rollingFileAppender.setFile(&quot;logs/app.log&quot;);
+    
+    // 配置滚动策略
+    TimeBasedRollingPolicy rollingPolicy = new TimeBasedRollingPolicy();
+    rollingPolicy.setContext(context);
+    rollingPolicy.setParent(rollingFileAppender);
+    rollingPolicy.setFileNamePattern(&quot;logs/app.%d{yyyy-MM-dd}.%i.log&quot;);
+    rollingPolicy.setMaxHistory(30);
+    rollingPolicy.setTotalSizeCap(FileSize.valueOf(&quot;1GB&quot;));
+    
+    // 配置大小和时间触发策略
+    SizeAndTimeBasedFNATP triggeringPolicy = new SizeAndTimeBasedFNATP();
+    triggeringPolicy.setMaxFileSize(FileSize.valueOf(&quot;100MB&quot;));
+    rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
+    
+    rollingPolicy.start();
+    rollingFileAppender.setRollingPolicy(rollingPolicy);
+    
+    // 配置编码器
+    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+    encoder.setContext(context);
+    encoder.setPattern(&quot;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&quot;);
+    encoder.start();
+    
+    rollingFileAppender.setEncoder(encoder);
+    rollingFileAppender.start();
+    
+    return rollingFileAppender;
+}
+</code></pre>
+</li>
+</ul>
+<h2 id="17-总结">17. 总结</h2>
+<p>Logback是一个功能强大且灵活的日志框架，主要优势包括：</p>
+<ol>
+<li><strong>高性能</strong>: 异步日志记录，减少对应用性能的影响</li>
+<li><strong>灵活配置</strong>: 支持XML、Groovy等多种配置方式</li>
+<li><strong>丰富功能</strong>: 滚动文件、过滤器、MDC等高级特性</li>
+<li><strong>良好集成</strong>: 与Spring Boot等框架无缝集成</li>
+<li><strong>可扩展性</strong>: 支持自定义Appender、Filter等组件</li>
+</ol>
+<h3 id="配置建议">配置建议</h3>
+<ul>
+<li>生产环境使用INFO级别，开发环境使用DEBUG</li>
+<li>合理使用异步日志提高性能</li>
+<li>配置日志滚动策略避免磁盘空间问题</li>
+<li>使用MDC增加日志上下文信息</li>
+<li>定期监控日志文件大小和系统性能</li>
+</ul>
+<p>通过合理配置和使用Logback，可以为应用提供高效、可靠的日志记录功能。</p>
+
+                    </div>
+                    <div class="toc-container">
+                        <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#2-%E4%BE%9D%E8%B5%96%E9%85%8D%E7%BD%AE">2. 依赖配置</a>
+<ul>
+<li><a href="#maven%E4%BE%9D%E8%B5%96">Maven依赖</a></li>
+<li><a href="#gradle%E4%BE%9D%E8%B5%96">Gradle依赖</a></li>
+</ul>
+</li>
+<li><a href="#3-%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8">3. 基本使用</a>
+<ul>
+<li><a href="#31-%E7%AE%80%E5%8D%95%E7%A4%BA%E4%BE%8B">3.1 简单示例</a></li>
+<li><a href="#32-%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB">3.2 日志级别</a></li>
+</ul>
+</li>
+<li><a href="#4-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">4. 配置文件</a>
+<ul>
+<li><a href="#41-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E6%9F%A5%E6%89%BE%E9%A1%BA%E5%BA%8F">4.1 配置文件查找顺序</a></li>
+<li><a href="#42-%E5%9F%BA%E6%9C%AC%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B-logbackxml">4.2 基本配置示例 (logback.xml)</a></li>
+</ul>
+</li>
+<li><a href="#5-%E9%AB%98%E7%BA%A7%E9%85%8D%E7%BD%AE">5. 高级配置</a>
+<ul>
+<li><a href="#51-%E6%BB%9A%E5%8A%A8%E6%96%87%E4%BB%B6%E9%85%8D%E7%BD%AE">5.1 滚动文件配置</a></li>
+<li><a href="#52-%E5%BC%82%E6%AD%A5%E6%97%A5%E5%BF%97%E9%85%8D%E7%BD%AE">5.2 异步日志配置</a></li>
+<li><a href="#53-%E5%A4%9A%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE">5.3 多环境配置</a></li>
+</ul>
+</li>
+<li><a href="#6-%E5%B8%B8%E7%94%A8%E6%A8%A1%E5%BC%8F%E5%92%8C%E6%A0%BC%E5%BC%8F">6. 常用模式和格式</a>
+<ul>
+<li><a href="#61-%E6%97%A5%E5%BF%97%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E">6.1 日志格式说明</a></li>
+<li><a href="#62-%E5%B8%B8%E7%94%A8%E6%A0%BC%E5%BC%8F%E6%A8%A1%E6%9D%BF">6.2 常用格式模板</a></li>
+</ul>
+</li>
+<li><a href="#7-%E8%BF%87%E6%BB%A4%E5%99%A8%E5%92%8C%E6%9D%A1%E4%BB%B6%E9%85%8D%E7%BD%AE">7. 过滤器和条件配置</a>
+<ul>
+<li><a href="#71-%E7%BA%A7%E5%88%AB%E8%BF%87%E6%BB%A4%E5%99%A8">7.1 级别过滤器</a></li>
+<li><a href="#72-%E9%98%88%E5%80%BC%E8%BF%87%E6%BB%A4%E5%99%A8">7.2 阈值过滤器</a></li>
+<li><a href="#73-%E8%87%AA%E5%AE%9A%E4%B9%89%E8%BF%87%E6%BB%A4%E5%99%A8">7.3 自定义过滤器</a></li>
+</ul>
+</li>
+<li><a href="#8-mdc-mapped-diagnostic-context-%E4%BD%BF%E7%94%A8">8. MDC (Mapped Diagnostic Context) 使用</a>
+<ul>
+<li><a href="#81-mdc%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95">8.1 MDC基本用法</a></li>
+<li><a href="#82-mdc%E9%85%8D%E7%BD%AE%E6%A0%BC%E5%BC%8F">8.2 MDC配置格式</a></li>
+</ul>
+</li>
+<li><a href="#9-%E7%89%B9%E5%AE%9Alogger%E9%85%8D%E7%BD%AE">9. 特定Logger配置</a>
+<ul>
+<li><a href="#91-%E5%8C%85%E7%BA%A7%E5%88%AB%E9%85%8D%E7%BD%AE">9.1 包级别配置</a></li>
+</ul>
+</li>
+<li><a href="#10-%E5%AE%9E%E9%99%85%E5%BA%94%E7%94%A8%E7%A4%BA%E4%BE%8B">10. 实际应用示例</a>
+<ul>
+<li><a href="#101-spring-boot%E9%9B%86%E6%88%90">10.1 Spring Boot集成</a></li>
+<li><a href="#102-web%E5%BA%94%E7%94%A8%E6%97%A5%E5%BF%97%E9%85%8D%E7%BD%AE">10.2 Web应用日志配置</a></li>
+</ul>
+</li>
+<li><a href="#11-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96">11. 性能优化</a>
+<ul>
+<li><a href="#111-%E5%BC%82%E6%AD%A5%E6%97%A5%E5%BF%97%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5">11.1 异步日志最佳实践</a></li>
+<li><a href="#112-%E6%9D%A1%E4%BB%B6%E6%97%A5%E5%BF%97%E8%AE%B0%E5%BD%95">11.2 条件日志记录</a></li>
+</ul>
+</li>
+<li><a href="#12-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5">12. 最佳实践</a>
+<ul>
+<li><a href="#121-logger%E5%A3%B0%E6%98%8E">12.1 Logger声明</a></li>
+<li><a href="#122-%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97">12.2 日志级别使用指南</a></li>
+<li><a href="#123-%E7%BB%93%E6%9E%84%E5%8C%96%E6%97%A5%E5%BF%97">12.3 结构化日志</a></li>
+</ul>
+</li>
+<li><a href="#13-%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">13. 常见问题和解决方案</a>
+<ul>
+<li><a href="#131-%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6%E6%9D%83%E9%99%90%E9%97%AE%E9%A2%98">13.1 日志文件权限问题</a></li>
+<li><a href="#132-%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98">13.2 日志文件过大问题</a></li>
+<li><a href="#133-%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E9%97%AE%E9%A2%98">13.3 内存泄漏问题</a></li>
+<li><a href="#134-%E9%85%8D%E7%BD%AE%E9%87%8D%E8%BD%BD">13.4 配置重载</a></li>
+</ul>
+</li>
+<li><a href="#14-%E7%9B%91%E6%8E%A7%E5%92%8C%E8%B0%83%E8%AF%95">14. 监控和调试</a>
+<ul>
+<li><a href="#141-jmx%E7%9B%91%E6%8E%A7">14.1 JMX监控</a></li>
+<li><a href="#142-%E7%8A%B6%E6%80%81%E7%9B%91%E5%90%AC%E5%99%A8">14.2 状态监听器</a></li>
+<li><a href="#143-%E8%B0%83%E8%AF%95%E9%85%8D%E7%BD%AE">14.3 调试配置</a></li>
+</ul>
+</li>
+<li><a href="#15-%E4%B8%8E%E5%85%B6%E4%BB%96%E6%A1%86%E6%9E%B6%E9%9B%86%E6%88%90">15. 与其他框架集成</a>
+<ul>
+<li><a href="#151-spring-boot%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE">15.1 Spring Boot自动配置</a></li>
+<li><a href="#152-%E4%B8%8Eelk-stack%E9%9B%86%E6%88%90">15.2 与ELK Stack集成</a></li>
+</ul>
+</li>
+<li><a href="#16-%E4%BB%A3%E7%A0%81%E7%BA%A7%E9%85%8D%E7%BD%AE">16. 代码级配置</a></li>
+<li><a href="#17-%E6%80%BB%E7%BB%93">17. 总结</a>
+<ul>
+<li><a href="#%E9%85%8D%E7%BD%AE%E5%BB%BA%E8%AE%AE">配置建议</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        
+            <div class="next-post">
+                <div class="next gt-c-content-color-first">下一篇</div>
+                <a href="https://n1es.org/9c67zoY6-c/" class="post-title gt-a-link">
+                    SQL注入详解
+                </a>
+            </div>
+        
+
+        
+
+        
+            
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js"></script>
+<script>
+    // md5.min.js
+    !function(n){
+        "use strict";
+        function d(n,t){var r=(65535&n)+(65535&t);return(n>>16)+(t>>16)+(r>>16)<<16|65535&r}
+        function f(n,t,r,e,o,u){return d((c=d(d(t,n),d(e,u)))<<(f=o)|c>>>32-f,r);var c,f}
+        function l(n,t,r,e,o,u,c){return f(t&r|~t&e,n,t,o,u,c)}
+        function v(n,t,r,e,o,u,c){return f(t&e|r&~e,n,t,o,u,c)}
+        function g(n,t,r,e,o,u,c){return f(t^r^e,n,t,o,u,c)}
+        function m(n,t,r,e,o,u,c){return f(r^(t|~e),n,t,o,u,c)}
+        function i(n,t){var r,e,o,u,c;n[t>>5]|=128<<t%32,n[14+(t+64>>>9<<4)]=t;var f=1732584193,i=-271733879,a=-1732584194,h=271733878;for(r=0;r<n.length;r+=16)f=l(e=f,o=i,u=a,c=h,n[r],7,-680876936),h=l(h,f,i,a,n[r+1],12,-389564586),a=l(a,h,f,i,n[r+2],17,606105819),i=l(i,a,h,f,n[r+3],22,-1044525330),f=l(f,i,a,h,n[r+4],7,-176418897),h=l(h,f,i,a,n[r+5],12,1200080426),a=l(a,h,f,i,n[r+6],17,-1473231341),i=l(i,a,h,f,n[r+7],22,-45705983),f=l(f,i,a,h,n[r+8],7,1770035416),h=l(h,f,i,a,n[r+9],12,-1958414417),a=l(a,h,f,i,n[r+10],17,-42063),i=l(i,a,h,f,n[r+11],22,-1990404162),f=l(f,i,a,h,n[r+12],7,1804603682),h=l(h,f,i,a,n[r+13],12,-40341101),a=l(a,h,f,i,n[r+14],17,-1502002290),f=v(f,i=l(i,a,h,f,n[r+15],22,1236535329),a,h,n[r+1],5,-165796510),h=v(h,f,i,a,n[r+6],9,-1069501632),a=v(a,h,f,i,n[r+11],14,643717713),i=v(i,a,h,f,n[r],20,-373897302),f=v(f,i,a,h,n[r+5],5,-701558691),h=v(h,f,i,a,n[r+10],9,38016083),a=v(a,h,f,i,n[r+15],14,-660478335),i=v(i,a,h,f,n[r+4],20,-405537848),f=v(f,i,a,h,n[r+9],5,568446438),h=v(h,f,i,a,n[r+14],9,-1019803690),a=v(a,h,f,i,n[r+3],14,-187363961),i=v(i,a,h,f,n[r+8],20,1163531501),f=v(f,i,a,h,n[r+13],5,-1444681467),h=v(h,f,i,a,n[r+2],9,-51403784),a=v(a,h,f,i,n[r+7],14,1735328473),f=g(f,i=v(i,a,h,f,n[r+12],20,-1926607734),a,h,n[r+5],4,-378558),h=g(h,f,i,a,n[r+8],11,-2022574463),a=g(a,h,f,i,n[r+11],16,1839030562),i=g(i,a,h,f,n[r+14],23,-35309556),f=g(f,i,a,h,n[r+1],4,-1530992060),h=g(h,f,i,a,n[r+4],11,1272893353),a=g(a,h,f,i,n[r+7],16,-155497632),i=g(i,a,h,f,n[r+10],23,-1094730640),f=g(f,i,a,h,n[r+13],4,681279174),h=g(h,f,i,a,n[r],11,-358537222),a=g(a,h,f,i,n[r+3],16,-722521979),i=g(i,a,h,f,n[r+6],23,76029189),f=g(f,i,a,h,n[r+9],4,-640364487),h=g(h,f,i,a,n[r+12],11,-421815835),a=g(a,h,f,i,n[r+15],16,530742520),f=m(f,i=g(i,a,h,f,n[r+2],23,-995338651),a,h,n[r],6,-198630844),h=m(h,f,i,a,n[r+7],10,1126891415),a=m(a,h,f,i,n[r+14],15,-1416354905),i=m(i,a,h,f,n[r+5],21,-57434055),f=m(f,i,a,h,n[r+12],6,1700485571),h=m(h,f,i,a,n[r+3],10,-1894986606),a=m(a,h,f,i,n[r+10],15,-1051523),i=m(i,a,h,f,n[r+1],21,-2054922799),f=m(f,i,a,h,n[r+8],6,1873313359),h=m(h,f,i,a,n[r+15],10,-30611744),a=m(a,h,f,i,n[r+6],15,-1560198380),i=m(i,a,h,f,n[r+13],21,1309151649),f=m(f,i,a,h,n[r+4],6,-145523070),h=m(h,f,i,a,n[r+11],10,-1120210379),a=m(a,h,f,i,n[r+2],15,718787259),i=m(i,a,h,f,n[r+9],21,-343485551),f=d(f,e),i=d(i,o),a=d(a,u),h=d(h,c);return[f,i,a,h]}
+        function a(n){var t,r="",e=32*n.length;for(t=0;t<e;t+=8)r+=String.fromCharCode(n[t>>5]>>>t%32&255);return r}
+        function h(n){var t,r=[];for(r[(n.length>>2)-1]=void 0,t=0;t<r.length;t+=1)r[t]=0;var e=8*n.length;for(t=0;t<e;t+=8)r[t>>5]|=(255&n.charCodeAt(t/8))<<t%32;return r}
+        function e(n){var t,r,e="0123456789abcdef",o="";for(r=0;r<n.length;r+=1)t=n.charCodeAt(r),o+=e.charAt(t>>>4&15)+e.charAt(15&t);return o}
+        function r(n){return unescape(encodeURIComponent(n))}
+        function o(n){return a(i(h(t=r(n)),8*t.length));var t}
+        function u(n,t){return function(n,t){var r,e,o=h(n),u=[],c=[];for(u[15]=c[15]=void 0,16<o.length&&(o=i(o,8*n.length)),r=0;r<16;r+=1)u[r]=909522486^o[r],c[r]=1549556828^o[r];return e=i(u.concat(h(t)),512+8*t.length),a(i(c.concat(e),640))}(r(n),r(t))}
+        function t(n,t,r){return t?r?u(t,n):e(u(t,n)):r?o(n):e(o(n))}
+        "function"==typeof define&&define.amd?define(function(){return t}):"object"==typeof module&&module.exports?module.exports=t:n.md5=t;
+    }(this);
+</script>
+
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '4d3423e48bbe96f523ec',
+    clientSecret: 'af6d0d215def347aa32591adde071875bd456f3f',
+    repo: 'niespanda.github.io',
+    owner: 'niespanda',
+    admin: ['niespanda'],
+    id: md5(location.pathname),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false       // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+            
+
+            
+        
+
+        
+
+        <div class="site-footer gt-c-content-color-first">
+    <div class="slogan gt-c-content-color-first">Shining is not the sun's patent, you also may shine.</div>
+    <div class="social-container">
+        
+            
+                <a href="https://github.com/niespanda/" target="_blank">
+                    <i class="fab fa-github gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+                <a href="https://twitter.com/niespanda" target="_blank">
+                    <i class="fab fa-twitter gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    </div>
+    <div class="footer-info">
+        认清差距、低头赶路
+    </div>
+    <div>
+        Powered by <a
+                href="https://github.com/niespanda" target="_blank">n1es | <a href="https://n1es.org/atom.xml" target="_blank">RSS</a></a>
+    </div>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+    </div>
+</div>
+</body>
+</html>

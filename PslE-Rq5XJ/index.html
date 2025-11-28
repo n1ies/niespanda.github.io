@@ -1,0 +1,2308 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+<meta name="description" content=""/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<title>Java字节码指令+ASM记录 | n1es</title>
+
+<link rel="shortcut icon" href="https://n1es.org/favicon.ico?v=1764331894685">
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://n1es.org/styles/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dockerfile.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dart.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>
+<!-- DEMO JS -->
+<!--<script src="media/scripts/index.js"></script>-->
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css">
+</head>
+<body>
+<div class="main gt-bg-theme-color-first">
+    <nav class="navbar navbar-expand-lg">
+    <div class="navbar-brand">
+        <img class="user-avatar" src="/images/avatar.png" alt="头像">
+        <div class="site-name gt-c-content-color-first">
+            n1es
+        </div>
+    </div>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars gt-c-content-color-first" style="font-size: 18px"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="navbar-nav mr-auto" style="text-align: center">
+            
+                <div class="nav-item">
+                    
+                        <a href="/" class="menu gt-a-link">
+                            首页
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/archives" class="menu gt-a-link">
+                            归档
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/tags" class="menu gt-a-link">
+                            标签
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/abouts" class="menu gt-a-link">
+                            关于
+                        </a>
+                    
+                </div>
+            
+        </div>
+        <div style="text-align: center">
+            <form id="gridea-search-form" style="position: relative" data-update="1764331894685" action="/search/index.html">
+                <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+                <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <div class="post-container">
+        <div class="post-detail gt-bg-theme-color-second">
+            <article class="gt-post-content">
+                <h2 class="post-title">
+                    Java字节码指令+ASM记录
+                </h2>
+                <div class="post-info">
+                    <time class="post-time gt-c-content-color-first">
+                        · 2025-09-09 ·
+                    </time>
+                    
+                </div>
+                
+                <div class="post-content-wrapper">
+                    <div class="post-content" v-pre>
+                        <h1 id="java字节码asm学习">Java字节码+ASM学习</h1>
+<h2 id="java字节码">Java字节码</h2>
+<h3 id="字节码常量表">字节码常量表</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NOP</code></td>
+<td><code>nop</code></td>
+<td>无操作</td>
+<td>无变化</td>
+</tr>
+<tr>
+<td><code>ACONST_NULL</code></td>
+<td><code>aconst_null</code></td>
+<td>推送null引用</td>
+<td>→ null</td>
+</tr>
+<tr>
+<td><code>ICONST_M1</code></td>
+<td><code>iconst_m1</code></td>
+<td>推送int常量-1</td>
+<td>→ -1</td>
+</tr>
+<tr>
+<td><code>ICONST_0</code></td>
+<td><code>iconst_0</code></td>
+<td>推送int常量0</td>
+<td>→ 0</td>
+</tr>
+<tr>
+<td><code>ICONST_1</code></td>
+<td><code>iconst_1</code></td>
+<td>推送int常量1</td>
+<td>→ 1</td>
+</tr>
+<tr>
+<td><code>ICONST_2</code></td>
+<td><code>iconst_2</code></td>
+<td>推送int常量2</td>
+<td>→ 2</td>
+</tr>
+<tr>
+<td><code>ICONST_3</code></td>
+<td><code>iconst_3</code></td>
+<td>推送int常量3</td>
+<td>→ 3</td>
+</tr>
+<tr>
+<td><code>ICONST_4</code></td>
+<td><code>iconst_4</code></td>
+<td>推送int常量4</td>
+<td>→ 4</td>
+</tr>
+<tr>
+<td><code>ICONST_5</code></td>
+<td><code>iconst_5</code></td>
+<td>推送int常量5</td>
+<td>→ 5</td>
+</tr>
+<tr>
+<td><code>LCONST_0</code></td>
+<td><code>lconst_0</code></td>
+<td>推送long常量0</td>
+<td>→ 0L</td>
+</tr>
+<tr>
+<td><code>LCONST_1</code></td>
+<td><code>lconst_1</code></td>
+<td>推送long常量1</td>
+<td>→ 1L</td>
+</tr>
+<tr>
+<td><code>FCONST_0</code></td>
+<td><code>fconst_0</code></td>
+<td>推送float常量0.0</td>
+<td>→ 0.0f</td>
+</tr>
+<tr>
+<td><code>FCONST_1</code></td>
+<td><code>fconst_1</code></td>
+<td>推送float常量1.0</td>
+<td>→ 1.0f</td>
+</tr>
+<tr>
+<td><code>FCONST_2</code></td>
+<td><code>fconst_2</code></td>
+<td>推送float常量2.0</td>
+<td>→ 2.0f</td>
+</tr>
+<tr>
+<td><code>DCONST_0</code></td>
+<td><code>dconst_0</code></td>
+<td>推送double常量0.0</td>
+<td>→ 0.0</td>
+</tr>
+<tr>
+<td><code>DCONST_1</code></td>
+<td><code>dconst_1</code></td>
+<td>推送double常量1.0</td>
+<td>→ 1.0</td>
+</tr>
+<tr>
+<td><code>BIPUSH</code></td>
+<td><code>bipush</code></td>
+<td>推送byte常量</td>
+<td>→ byte</td>
+</tr>
+<tr>
+<td><code>SIPUSH</code></td>
+<td><code>sipush</code></td>
+<td>推送short常量</td>
+<td>→ short</td>
+</tr>
+<tr>
+<td><code>LDC</code></td>
+<td><code>ldc</code></td>
+<td>从常量池加载项</td>
+<td>→ item</td>
+</tr>
+<tr>
+<td><code>LDC_W</code></td>
+<td><code>ldc_w</code></td>
+<td>从常量池加载项（宽索引）</td>
+<td>→ item</td>
+</tr>
+<tr>
+<td><code>LDC2_W</code></td>
+<td><code>ldc2_w</code></td>
+<td>从常量池加载long/double</td>
+<td>→ long/double</td>
+</tr>
+</tbody>
+</table>
+<h3 id="局部变量表">局部变量表</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ILOAD</code></td>
+<td><code>iload</code></td>
+<td>加载int局部变量</td>
+<td>→ int</td>
+</tr>
+<tr>
+<td><code>LLOAD</code></td>
+<td><code>lload</code></td>
+<td>加载long局部变量</td>
+<td>→ long</td>
+</tr>
+<tr>
+<td><code>FLOAD</code></td>
+<td><code>fload</code></td>
+<td>加载float局部变量</td>
+<td>→ float</td>
+</tr>
+<tr>
+<td><code>DLOAD</code></td>
+<td><code>dload</code></td>
+<td>加载double局部变量</td>
+<td>→ double</td>
+</tr>
+<tr>
+<td><code>ALOAD</code></td>
+<td><code>aload</code></td>
+<td>加载引用局部变量</td>
+<td>→ ref</td>
+</tr>
+<tr>
+<td><code>ILOAD_0</code></td>
+<td><code>iload_0</code></td>
+<td>加载int局部变量0</td>
+<td>→ int</td>
+</tr>
+<tr>
+<td><code>ILOAD_1</code></td>
+<td><code>iload_1</code></td>
+<td>加载int局部变量1</td>
+<td>→ int</td>
+</tr>
+<tr>
+<td><code>ILOAD_2</code></td>
+<td><code>iload_2</code></td>
+<td>加载int局部变量2</td>
+<td>→ int</td>
+</tr>
+<tr>
+<td><code>ILOAD_3</code></td>
+<td><code>iload_3</code></td>
+<td>加载int局部变量3</td>
+<td>→ int</td>
+</tr>
+<tr>
+<td><code>LLOAD_0</code></td>
+<td><code>lload_0</code></td>
+<td>加载long局部变量0</td>
+<td>→ long</td>
+</tr>
+<tr>
+<td><code>LLOAD_1</code></td>
+<td><code>lload_1</code></td>
+<td>加载long局部变量1</td>
+<td>→ long</td>
+</tr>
+<tr>
+<td><code>LLOAD_2</code></td>
+<td><code>lload_2</code></td>
+<td>加载long局部变量2</td>
+<td>→ long</td>
+</tr>
+<tr>
+<td><code>LLOAD_3</code></td>
+<td><code>lload_3</code></td>
+<td>加载long局部变量3</td>
+<td>→ long</td>
+</tr>
+<tr>
+<td><code>FLOAD_0</code></td>
+<td><code>fload_0</code></td>
+<td>加载float局部变量0</td>
+<td>→ float</td>
+</tr>
+<tr>
+<td><code>FLOAD_1</code></td>
+<td><code>fload_1</code></td>
+<td>加载float局部变量1</td>
+<td>→ float</td>
+</tr>
+<tr>
+<td><code>FLOAD_2</code></td>
+<td><code>fload_2</code></td>
+<td>加载float局部变量2</td>
+<td>→ float</td>
+</tr>
+<tr>
+<td><code>FLOAD_3</code></td>
+<td><code>fload_3</code></td>
+<td>加载float局部变量3</td>
+<td>→ float</td>
+</tr>
+<tr>
+<td><code>DLOAD_0</code></td>
+<td><code>dload_0</code></td>
+<td>加载double局部变量0</td>
+<td>→ double</td>
+</tr>
+<tr>
+<td><code>DLOAD_1</code></td>
+<td><code>dload_1</code></td>
+<td>加载double局部变量1</td>
+<td>→ double</td>
+</tr>
+<tr>
+<td><code>DLOAD_2</code></td>
+<td><code>dload_2</code></td>
+<td>加载double局部变量2</td>
+<td>→ double</td>
+</tr>
+<tr>
+<td><code>DLOAD_3</code></td>
+<td><code>dload_3</code></td>
+<td>加载double局部变量3</td>
+<td>→ double</td>
+</tr>
+<tr>
+<td><code>ALOAD_0</code></td>
+<td><code>aload_0</code></td>
+<td>加载引用局部变量0</td>
+<td>→ ref</td>
+</tr>
+<tr>
+<td><code>ALOAD_1</code></td>
+<td><code>aload_1</code></td>
+<td>加载引用局部变量1</td>
+<td>→ ref</td>
+</tr>
+<tr>
+<td><code>ALOAD_2</code></td>
+<td><code>aload_2</code></td>
+<td>加载引用局部变量2</td>
+<td>→ ref</td>
+</tr>
+<tr>
+<td><code>ALOAD_3</code></td>
+<td><code>aload_3</code></td>
+<td>加载引用局部变量3</td>
+<td>→ ref</td>
+</tr>
+<tr>
+<td><code>ISTORE</code></td>
+<td><code>istore</code></td>
+<td>存储int到局部变量</td>
+<td>int →</td>
+</tr>
+<tr>
+<td><code>LSTORE</code></td>
+<td><code>lstore</code></td>
+<td>存储long到局部变量</td>
+<td>long →</td>
+</tr>
+<tr>
+<td><code>FSTORE</code></td>
+<td><code>fstore</code></td>
+<td>存储float到局部变量</td>
+<td>float →</td>
+</tr>
+<tr>
+<td><code>DSTORE</code></td>
+<td><code>dstore</code></td>
+<td>存储double到局部变量</td>
+<td>double →</td>
+</tr>
+<tr>
+<td><code>ASTORE</code></td>
+<td><code>astore</code></td>
+<td>存储引用到局部变量</td>
+<td>ref →</td>
+</tr>
+<tr>
+<td><code>ISTORE_0</code></td>
+<td><code>istore_0</code></td>
+<td>存储int到局部变量0</td>
+<td>int →</td>
+</tr>
+<tr>
+<td><code>ISTORE_1</code></td>
+<td><code>istore_1</code></td>
+<td>存储int到局部变量1</td>
+<td>int →</td>
+</tr>
+<tr>
+<td><code>ISTORE_2</code></td>
+<td><code>istore_2</code></td>
+<td>存储int到局部变量2</td>
+<td>int →</td>
+</tr>
+<tr>
+<td><code>ISTORE_3</code></td>
+<td><code>istore_3</code></td>
+<td>存储int到局部变量3</td>
+<td>int →</td>
+</tr>
+<tr>
+<td><code>LSTORE_0</code></td>
+<td><code>lstore_0</code></td>
+<td>存储long到局部变量0</td>
+<td>long →</td>
+</tr>
+<tr>
+<td><code>LSTORE_1</code></td>
+<td><code>lstore_1</code></td>
+<td>存储long到局部变量1</td>
+<td>long →</td>
+</tr>
+<tr>
+<td><code>LSTORE_2</code></td>
+<td><code>lstore_2</code></td>
+<td>存储long到局部变量2</td>
+<td>long →</td>
+</tr>
+<tr>
+<td><code>LSTORE_3</code></td>
+<td><code>lstore_3</code></td>
+<td>存储long到局部变量3</td>
+<td>long →</td>
+</tr>
+<tr>
+<td><code>FSTORE_0</code></td>
+<td><code>fstore_0</code></td>
+<td>存储float到局部变量0</td>
+<td>float →</td>
+</tr>
+<tr>
+<td><code>FSTORE_1</code></td>
+<td><code>fstore_1</code></td>
+<td>存储float到局部变量1</td>
+<td>float →</td>
+</tr>
+<tr>
+<td><code>FSTORE_2</code></td>
+<td><code>fstore_2</code></td>
+<td>存储float到局部变量2</td>
+<td>float →</td>
+</tr>
+<tr>
+<td><code>FSTORE_3</code></td>
+<td><code>fstore_3</code></td>
+<td>存储float到局部变量3</td>
+<td>float →</td>
+</tr>
+<tr>
+<td><code>DSTORE_0</code></td>
+<td><code>dstore_0</code></td>
+<td>存储double到局部变量0</td>
+<td>double →</td>
+</tr>
+<tr>
+<td><code>DSTORE_1</code></td>
+<td><code>dstore_1</code></td>
+<td>存储double到局部变量1</td>
+<td>double →</td>
+</tr>
+<tr>
+<td><code>DSTORE_2</code></td>
+<td><code>dstore_2</code></td>
+<td>存储double到局部变量2</td>
+<td>double →</td>
+</tr>
+<tr>
+<td><code>DSTORE_3</code></td>
+<td><code>dstore_3</code></td>
+<td>存储double到局部变量3</td>
+<td>double →</td>
+</tr>
+<tr>
+<td><code>ASTORE_0</code></td>
+<td><code>astore_0</code></td>
+<td>存储引用到局部变量0</td>
+<td>ref →</td>
+</tr>
+<tr>
+<td><code>ASTORE_1</code></td>
+<td><code>astore_1</code></td>
+<td>存储引用到局部变量1</td>
+<td>ref →</td>
+</tr>
+<tr>
+<td><code>ASTORE_2</code></td>
+<td><code>astore_2</code></td>
+<td>存储引用到局部变量2</td>
+<td>ref →</td>
+</tr>
+<tr>
+<td><code>ASTORE_3</code></td>
+<td><code>astore_3</code></td>
+<td>存储引用到局部变量3</td>
+<td>ref →</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="数组操作指令">数组操作指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEWARRAY</code></td>
+<td><code>newarray</code></td>
+<td>创建基本类型数组</td>
+<td>count → arrayref</td>
+</tr>
+<tr>
+<td><code>ANEWARRAY</code></td>
+<td><code>anewarray</code></td>
+<td>创建引用类型数组</td>
+<td>count → arrayref</td>
+</tr>
+<tr>
+<td><code>MULTIANEWARRAY</code></td>
+<td><code>multianewarray</code></td>
+<td>创建多维数组</td>
+<td>count1, count2, ... → arrayref</td>
+</tr>
+<tr>
+<td><code>ARRAYLENGTH</code></td>
+<td><code>arraylength</code></td>
+<td>获取数组长度</td>
+<td>arrayref → length</td>
+</tr>
+<tr>
+<td><code>BALOAD</code></td>
+<td><code>baload</code></td>
+<td>加载byte/boolean数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>CALOAD</code></td>
+<td><code>caload</code></td>
+<td>加载char数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>SALOAD</code></td>
+<td><code>saload</code></td>
+<td>加载short数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>IALOAD</code></td>
+<td><code>iaload</code></td>
+<td>加载int数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>LALOAD</code></td>
+<td><code>laload</code></td>
+<td>加载long数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>FALOAD</code></td>
+<td><code>faload</code></td>
+<td>加载float数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>DALOAD</code></td>
+<td><code>daload</code></td>
+<td>加载double数组元素</td>
+<td>arrayref, index → value</td>
+</tr>
+<tr>
+<td><code>AALOAD</code></td>
+<td><code>aaload</code></td>
+<td>加载引用数组元素</td>
+<td>arrayref, index → ref</td>
+</tr>
+<tr>
+<td><code>BASTORE</code></td>
+<td><code>bastore</code></td>
+<td>存储byte/boolean到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>CASTORE</code></td>
+<td><code>castore</code></td>
+<td>存储char到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>SASTORE</code></td>
+<td><code>sastore</code></td>
+<td>存储short到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>IASTORE</code></td>
+<td><code>iastore</code></td>
+<td>存储int到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>LASTORE</code></td>
+<td><code>lastore</code></td>
+<td>存储long到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>FASTORE</code></td>
+<td><code>fastore</code></td>
+<td>存储float到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>DASTORE</code></td>
+<td><code>dastore</code></td>
+<td>存储double到数组</td>
+<td>arrayref, index, value →</td>
+</tr>
+<tr>
+<td><code>AASTORE</code></td>
+<td><code>aastore</code></td>
+<td>存储引用到数组</td>
+<td>arrayref, index, ref →</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="栈操作指令">栈操作指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POP</code></td>
+<td><code>pop</code></td>
+<td>弹出栈顶元素</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>POP2</code></td>
+<td><code>pop2</code></td>
+<td>弹出栈顶一个或两个元素</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>DUP</code></td>
+<td><code>dup</code></td>
+<td>复制栈顶元素</td>
+<td>value → value, value</td>
+</tr>
+<tr>
+<td><code>DUP_X1</code></td>
+<td><code>dup_x1</code></td>
+<td>复制栈顶元素并插入到栈顶下方</td>
+<td>value1, value2 → value1, value2, value1</td>
+</tr>
+<tr>
+<td><code>DUP_X2</code></td>
+<td><code>dup_x2</code></td>
+<td>复制栈顶元素并插入到栈顶下方两个位置</td>
+<td>value1, value2, value3 → value1, value2, value3, value1</td>
+</tr>
+<tr>
+<td><code>DUP2</code></td>
+<td><code>dup2</code></td>
+<td>复制栈顶一个或两个元素</td>
+<td>value1, value2 → value1, value2, value1, value2</td>
+</tr>
+<tr>
+<td><code>DUP2_X1</code></td>
+<td><code>dup2_x1</code></td>
+<td>复制栈顶两个元素并插入到栈顶下方</td>
+<td>value1, value2, value3 → value1, value2, value3, value1, value2</td>
+</tr>
+<tr>
+<td><code>DUP2_X2</code></td>
+<td><code>dup2_x2</code></td>
+<td>复制栈顶两个元素并插入到栈顶下方两个位置</td>
+<td>value1, value2, value3, value4 → value1, value2, value3, value4, value1, value2</td>
+</tr>
+<tr>
+<td><code>SWAP</code></td>
+<td><code>swap</code></td>
+<td>交换栈顶两个元素</td>
+<td>value1, value2 → value2, value1</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="数学运算指令">数学运算指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IADD</code></td>
+<td><code>iadd</code></td>
+<td>int加法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LADD</code></td>
+<td><code>ladd</code></td>
+<td>long加法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FADD</code></td>
+<td><code>fadd</code></td>
+<td>float加法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DADD</code></td>
+<td><code>dadd</code></td>
+<td>double加法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>ISUB</code></td>
+<td><code>isub</code></td>
+<td>int减法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LSUB</code></td>
+<td><code>lsub</code></td>
+<td>long减法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FSUB</code></td>
+<td><code>fsub</code></td>
+<td>float减法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DSUB</code></td>
+<td><code>dsub</code></td>
+<td>double减法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IMUL</code></td>
+<td><code>imul</code></td>
+<td>int乘法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LMUL</code></td>
+<td><code>lmul</code></td>
+<td>long乘法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FMUL</code></td>
+<td><code>fmul</code></td>
+<td>float乘法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DMUL</code></td>
+<td><code>dmul</code></td>
+<td>double乘法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IDIV</code></td>
+<td><code>idiv</code></td>
+<td>int除法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LDIV</code></td>
+<td><code>ldiv</code></td>
+<td>long除法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FDIV</code></td>
+<td><code>fdiv</code></td>
+<td>float除法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DDIV</code></td>
+<td><code>ddiv</code></td>
+<td>double除法</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IREM</code></td>
+<td><code>irem</code></td>
+<td>int取余</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LREM</code></td>
+<td><code>lrem</code></td>
+<td>long取余</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FREM</code></td>
+<td><code>frem</code></td>
+<td>float取余</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DREM</code></td>
+<td><code>drem</code></td>
+<td>double取余</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>INEG</code></td>
+<td><code>ineg</code></td>
+<td>int取负</td>
+<td>value → result</td>
+</tr>
+<tr>
+<td><code>LNEG</code></td>
+<td><code>lneg</code></td>
+<td>long取负</td>
+<td>value → result</td>
+</tr>
+<tr>
+<td><code>FNEG</code></td>
+<td><code>fneg</code></td>
+<td>float取负</td>
+<td>value → result</td>
+</tr>
+<tr>
+<td><code>DNEG</code></td>
+<td><code>dneg</code></td>
+<td>double取负</td>
+<td>value → result</td>
+</tr>
+<tr>
+<td><code>ISHL</code></td>
+<td><code>ishl</code></td>
+<td>int左移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LSHL</code></td>
+<td><code>lshl</code></td>
+<td>long左移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>ISHR</code></td>
+<td><code>ishr</code></td>
+<td>int算术右移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LSHR</code></td>
+<td><code>lshr</code></td>
+<td>long算术右移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IUSHR</code></td>
+<td><code>iushr</code></td>
+<td>int逻辑右移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LUSHR</code></td>
+<td><code>lushr</code></td>
+<td>long逻辑右移</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IAND</code></td>
+<td><code>iand</code></td>
+<td>int按位与</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LAND</code></td>
+<td><code>land</code></td>
+<td>long按位与</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IOR</code></td>
+<td><code>ior</code></td>
+<td>int按位或</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LOR</code></td>
+<td><code>lor</code></td>
+<td>long按位或</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IXOR</code></td>
+<td><code>ixor</code></td>
+<td>int按位异或</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>LXOR</code></td>
+<td><code>lxor</code></td>
+<td>long按位异或</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IINC</code></td>
+<td><code>iinc</code></td>
+<td>局部变量自增</td>
+<td>无栈变化</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="类型转换指令">类型转换指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>I2L</code></td>
+<td><code>i2l</code></td>
+<td>int转long</td>
+<td>int → long</td>
+</tr>
+<tr>
+<td><code>I2F</code></td>
+<td><code>i2f</code></td>
+<td>int转float</td>
+<td>int → float</td>
+</tr>
+<tr>
+<td><code>I2D</code></td>
+<td><code>i2d</code></td>
+<td>int转double</td>
+<td>int → double</td>
+</tr>
+<tr>
+<td><code>L2I</code></td>
+<td><code>l2i</code></td>
+<td>long转int</td>
+<td>long → int</td>
+</tr>
+<tr>
+<td><code>L2F</code></td>
+<td><code>l2f</code></td>
+<td>long转float</td>
+<td>long → float</td>
+</tr>
+<tr>
+<td><code>L2D</code></td>
+<td><code>l2d</code></td>
+<td>long转double</td>
+<td>long → double</td>
+</tr>
+<tr>
+<td><code>F2I</code></td>
+<td><code>f2i</code></td>
+<td>float转int</td>
+<td>float → int</td>
+</tr>
+<tr>
+<td><code>F2L</code></td>
+<td><code>f2l</code></td>
+<td>float转long</td>
+<td>float → long</td>
+</tr>
+<tr>
+<td><code>F2D</code></td>
+<td><code>f2d</code></td>
+<td>float转double</td>
+<td>float → double</td>
+</tr>
+<tr>
+<td><code>D2I</code></td>
+<td><code>d2i</code></td>
+<td>double转int</td>
+<td>double → int</td>
+</tr>
+<tr>
+<td><code>D2L</code></td>
+<td><code>d2l</code></td>
+<td>double转long</td>
+<td>double → long</td>
+</tr>
+<tr>
+<td><code>D2F</code></td>
+<td><code>d2f</code></td>
+<td>double转float</td>
+<td>double → float</td>
+</tr>
+<tr>
+<td><code>I2B</code></td>
+<td><code>i2b</code></td>
+<td>int转byte</td>
+<td>int → byte</td>
+</tr>
+<tr>
+<td><code>I2C</code></td>
+<td><code>i2c</code></td>
+<td>int转char</td>
+<td>int → char</td>
+</tr>
+<tr>
+<td><code>I2S</code></td>
+<td><code>i2s</code></td>
+<td>int转short</td>
+<td>int → short</td>
+</tr>
+<tr>
+<td><code>CHECKCAST</code></td>
+<td><code>checkcast</code></td>
+<td>类型检查</td>
+<td>ref → ref</td>
+</tr>
+<tr>
+<td><code>INSTANCEOF</code></td>
+<td><code>instanceof</code></td>
+<td>实例检查</td>
+<td>ref → result</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="比较指令">比较指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LCMP</code></td>
+<td><code>lcmp</code></td>
+<td>long比较</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FCMPL</code></td>
+<td><code>fcmpl</code></td>
+<td>float比较（-1在NaN）</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>FCMPG</code></td>
+<td><code>fcmpg</code></td>
+<td>float比较（1在NaN）</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DCMPL</code></td>
+<td><code>dcmpl</code></td>
+<td>double比较（-1在NaN）</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>DCMPG</code></td>
+<td><code>dcmpg</code></td>
+<td>double比较（1在NaN）</td>
+<td>value1, value2 → result</td>
+</tr>
+<tr>
+<td><code>IFEQ</code></td>
+<td><code>ifeq</code></td>
+<td>int等于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IFNE</code></td>
+<td><code>ifne</code></td>
+<td>int不等于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IFLT</code></td>
+<td><code>iflt</code></td>
+<td>int小于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IFGE</code></td>
+<td><code>ifge</code></td>
+<td>int大于等于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IFGT</code></td>
+<td><code>ifgt</code></td>
+<td>int大于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IFLE</code></td>
+<td><code>ifle</code></td>
+<td>int小于等于0跳转</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPEQ</code></td>
+<td><code>if_icmpeq</code></td>
+<td>int相等跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPNE</code></td>
+<td><code>if_icmpne</code></td>
+<td>int不等跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPLT</code></td>
+<td><code>if_icmplt</code></td>
+<td>int小于跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPGE</code></td>
+<td><code>if_icmpge</code></td>
+<td>int大于等于跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPGT</code></td>
+<td><code>if_icmpgt</code></td>
+<td>int大于跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ICMPLE</code></td>
+<td><code>if_icmple</code></td>
+<td>int小于等于跳转</td>
+<td>value1, value2 →</td>
+</tr>
+<tr>
+<td><code>IF_ACMPEQ</code></td>
+<td><code>if_acmpeq</code></td>
+<td>引用相等跳转</td>
+<td>ref1, ref2 →</td>
+</tr>
+<tr>
+<td><code>IF_ACMPNE</code></td>
+<td><code>if_acmpne</code></td>
+<td>引用不等跳转</td>
+<td>ref1, ref2 →</td>
+</tr>
+<tr>
+<td><code>IFNULL</code></td>
+<td><code>ifnull</code></td>
+<td>引用为null跳转</td>
+<td>ref →</td>
+</tr>
+<tr>
+<td><code>IFNONNULL</code></td>
+<td><code>ifnonnull</code></td>
+<td>引用不为null跳转</td>
+<td>ref →</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="控制流指令">控制流指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GOTO</code></td>
+<td><code>goto</code></td>
+<td>无条件跳转</td>
+<td>无栈变化</td>
+</tr>
+<tr>
+<td><code>JSR</code></td>
+<td><code>jsr</code></td>
+<td>跳转到子程序</td>
+<td>→ address</td>
+</tr>
+<tr>
+<td><code>RET</code></td>
+<td><code>ret</code></td>
+<td>从子程序返回</td>
+<td>无栈变化</td>
+</tr>
+<tr>
+<td><code>TABLESWITCH</code></td>
+<td><code>tableswitch</code></td>
+<td>表跳转</td>
+<td>index →</td>
+</tr>
+<tr>
+<td><code>LOOKUPSWITCH</code></td>
+<td><code>lookupswitch</code></td>
+<td>查找跳转</td>
+<td>key →</td>
+</tr>
+<tr>
+<td><code>IRETURN</code></td>
+<td><code>ireturn</code></td>
+<td>int方法返回</td>
+<td>value → [empty]</td>
+</tr>
+<tr>
+<td><code>LRETURN</code></td>
+<td><code>lreturn</code></td>
+<td>long方法返回</td>
+<td>value → [empty]</td>
+</tr>
+<tr>
+<td><code>FRETURN</code></td>
+<td><code>freturn</code></td>
+<td>float方法返回</td>
+<td>value → [empty]</td>
+</tr>
+<tr>
+<td><code>DRETURN</code></td>
+<td><code>dreturn</code></td>
+<td>double方法返回</td>
+<td>value → [empty]</td>
+</tr>
+<tr>
+<td><code>ARETURN</code></td>
+<td><code>areturn</code></td>
+<td>引用方法返回</td>
+<td>ref → [empty]</td>
+</tr>
+<tr>
+<td><code>RETURN</code></td>
+<td><code>return</code></td>
+<td>void方法返回</td>
+<td>→ [empty]</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="方法调用指令">方法调用指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INVOKEVIRTUAL</code></td>
+<td><code>invokevirtual</code></td>
+<td>调用实例方法</td>
+<td>objectref, [arg1, arg2, ...] → result</td>
+</tr>
+<tr>
+<td><code>INVOKESPECIAL</code></td>
+<td><code>invokespecial</code></td>
+<td>调用实例特殊方法（构造/私有/父类）</td>
+<td>objectref, [arg1, arg2, ...] → result</td>
+</tr>
+<tr>
+<td><code>INVOKESTATIC</code></td>
+<td><code>invokestatic</code></td>
+<td>调用静态方法</td>
+<td>[arg1, arg2, ...] → result</td>
+</tr>
+<tr>
+<td><code>INVOKEINTERFACE</code></td>
+<td><code>invokeinterface</code></td>
+<td>调用接口方法</td>
+<td>objectref, [arg1, arg2, ...] → result</td>
+</tr>
+<tr>
+<td><code>INVOKEDYNAMIC</code></td>
+<td><code>invokedynamic</code></td>
+<td>调用动态方法</td>
+<td>[arg1, arg2, ...] → result</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="字段访问指令">字段访问指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GETSTATIC</code></td>
+<td><code>getstatic</code></td>
+<td>获取静态字段</td>
+<td>→ value</td>
+</tr>
+<tr>
+<td><code>PUTSTATIC</code></td>
+<td><code>putstatic</code></td>
+<td>设置静态字段</td>
+<td>value →</td>
+</tr>
+<tr>
+<td><code>GETFIELD</code></td>
+<td><code>getfield</code></td>
+<td>获取实例字段</td>
+<td>objectref → value</td>
+</tr>
+<tr>
+<td><code>PUTFIELD</code></td>
+<td><code>putfield</code></td>
+<td>设置实例字段</td>
+<td>objectref, value →</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="对象操作指令">对象操作指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEW</code></td>
+<td><code>new</code></td>
+<td>创建新对象</td>
+<td>→ objectref</td>
+</tr>
+<tr>
+<td><code>NEWARRAY</code></td>
+<td><code>newarray</code></td>
+<td>创建基本类型数组</td>
+<td>count → arrayref</td>
+</tr>
+<tr>
+<td><code>ANEWARRAY</code></td>
+<td><code>anewarray</code></td>
+<td>创建引用类型数组</td>
+<td>count → arrayref</td>
+</tr>
+<tr>
+<td><code>MULTIANEWARRAY</code></td>
+<td><code>multianewarray</code></td>
+<td>创建多维数组</td>
+<td>count1, count2, ... → arrayref</td>
+</tr>
+<tr>
+<td><code>ARRAYLENGTH</code></td>
+<td><code>arraylength</code></td>
+<td>获取数组长度</td>
+<td>arrayref → length</td>
+</tr>
+<tr>
+<td><code>INSTANCEOF</code></td>
+<td><code>instanceof</code></td>
+<td>实例检查</td>
+<td>ref → result</td>
+</tr>
+<tr>
+<td><code>CHECKCAST</code></td>
+<td><code>checkcast</code></td>
+<td>类型检查</td>
+<td>ref → ref</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="异常处理指令">异常处理指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ATHROW</code></td>
+<td><code>athrow</code></td>
+<td>抛出异常</td>
+<td>objectref → [empty]</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="同步指令">同步指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MONITORENTER</code></td>
+<td><code>monitorenter</code></td>
+<td>获取对象锁</td>
+<td>objectref →</td>
+</tr>
+<tr>
+<td><code>MONITOREXIT</code></td>
+<td><code>monitorexit</code></td>
+<td>释放对象锁</td>
+<td>objectref →</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="其他指令">其他指令</h3>
+<table>
+<thead>
+<tr>
+<th>操作码</th>
+<th>JVM指令</th>
+<th>描述</th>
+<th>栈行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WIDE</code></td>
+<td><code>wide</code></td>
+<td>扩展局部变量索引</td>
+<td>无栈变化</td>
+</tr>
+<tr>
+<td><code>BREAKPOINT</code></td>
+<td><code>breakpoint</code></td>
+<td>调试断点</td>
+<td>无栈变化</td>
+</tr>
+<tr>
+<td><code>IMPDEP1</code></td>
+<td><code>impdep1</code></td>
+<td>保留指令</td>
+<td>无栈变化</td>
+</tr>
+<tr>
+<td><code>IMPDEP2</code></td>
+<td><code>impdep2</code></td>
+<td>保留指令</td>
+<td>无栈变化</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="示例分析">示例分析</h3>
+<pre><code class="language-java">警告: 二进制文件TestAsm包含org.n1es.TestAsm
+Compiled from &quot;TestAsm.java&quot;
+public class org.n1es.TestAsm {
+  public org.n1es.TestAsm();
+    Code:
+       0: aload_0														// 加载This对象 aload指令为加载引用局部变量表下标为0的引用对象到操作数栈上
+       1: invokespecial #1                  // Method java/lang/Object.&quot;&lt;init&gt;&quot;:()V // invokespecial 调用实例特殊方法（构造/私有/父类）
+       4: return														// return指令为void，无返回,areturn为引用对象返回，其他return指令表中都有列举。
+       
+       
+
+  public java.lang.Object test(java.lang.String, java.lang.Object, int, long);
+    Code:
+       0: iconst_4													// 推送4个int常量
+       1: anewarray     #2                  // class java/lang/Object 创建一个Object类型的引用数组，数组固定4个index
+       4: dup																// 复制栈顶元素 anewarray到操作数栈
+       5: iconst_0													// 指向第0个位置
+       6: aload_1														// 加载引用变量1，test方法的第一个入参
+       7: aastore														// AASTORE指令会存储刚load的参数到数组
+       8: dup																// 继续复制anewarray到栈顶
+       9: iconst_1													// 对索引位置1进行操作，如上
+      10: aload_2
+      11: aastore
+      12: dup
+      13: iconst_2													// 索引2操作
+      14: iload_3
+      15: invokestatic  #3                  // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;											// 执行静态方法valueOf(index3)
+      18: aastore														// 然后存储到数组
+      19: dup
+      20: iconst_3
+      21: lload         4
+      23: invokestatic  #4                  // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;												 // 同上处理
+      26: aastore
+      27: astore        6										// 存储数组引用对象到局部变量表中
+      29: aconst_null												// 指向一个null指令
+      30: areturn														// 返回上面的null引用
+
+上述方法：
+        public Object test(String var1,Object var2,int var3,long var4){
+			     Object[] var5 =   new Object[]{var1,var2,var3,var4};
+        	 return null;
+      	}
+翻译过来还是很简单的，但直接看字节码指令还是有点晦涩和繁琐，需要对Java栈操作有一定的理解，并熟悉各个指令的作用。
+</code></pre>
+<h3 id="class文件格式">Class文件格式</h3>
+<p>Class文件是一个二进制文件，严格按照特定格式组织：</p>
+<p>如果在对字节码进行解析研究时，方便理解Class字节格式。</p>
+<pre><code>ClassFile {
+    u4             magic;                    // 魔数 0xCAFEBABE
+    u2             minor_version;           // 次版本号
+    u2             major_version;           // 主版本号
+    u2             constant_pool_count;     // 常量池计数
+    cp_info        constant_pool[constant_pool_count-1];  // 常量池
+    u2             access_flags;            // 访问标志
+    u2             this_class;              // 当前类索引
+    u2             super_class;             // 父类索引
+    u2             interfaces_count;        // 接口计数
+    u2             interfaces[interfaces_count];          // 接口索引表
+    u2             fields_count;            // 字段计数
+    field_info     fields[fields_count];    // 字段表
+    u2             methods_count;           // 方法计数
+    method_info    methods[methods_count];  // 方法表
+    u2             attributes_count;        // 属性计数
+    attribute_info attributes[attributes_count];          // 属性表
+}
+</code></pre>
+<h3 id="jvm运行时数据区">JVM运行时数据区</h3>
+<h5 id="内存区域划分">内存区域划分</h5>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                    JVM内存结构                            │
+├─────────────────────────────────────────────────────────┤
+│  方法区(Method Area)                                     │
+│  ├─ 运行时常量池(Runtime Constant Pool)                   │
+│  ├─ 类信息(Class Information)                            │
+│  └─ 方法信息(Method Information)                          │
+├─────────────────────────────────────────────────────────┤
+│  堆(Heap)                                               │
+│  ├─ 新生代(Young Generation)                            │
+│  └─ 老年代(Old Generation)                              │
+├─────────────────────────────────────────────────────────┤
+│  JVM栈(JVM Stack) - 每个线程一个                         │
+│  ├─ 栈帧(Stack Frame)                                   │
+│  │  ├─ 局部变量表(Local Variable Table)                 │
+│  │  ├─ 操作数栈(Operand Stack)                          │
+│  │  ├─ 动态链接(Dynamic Linking)                        │
+│  │  └─ 方法返回地址(Return Address)                     │
+├─────────────────────────────────────────────────────────┤
+│  程序计数器(PC Register) - 每个线程一个                   │
+├─────────────────────────────────────────────────────────┤
+│  本地方法栈(Native Method Stack) - 每个线程一个           │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+<h5 id="栈帧结构详解">栈帧结构详解</h5>
+<p>每个方法调用都会创建一个栈帧：</p>
+<pre><code class="language-java">public class StackFrameExample {
+    public int calculate(int a, int b) {
+        int result = a + b;
+        int doubled = result * 2;
+        return doubled;
+    }
+}
+</code></pre>
+<p>对应的栈针结构：</p>
+<pre><code>┌─────────────────────────────────────┐
+│           栈帧(Stack Frame)          │
+├─────────────────────────────────────┤
+│  局部变量表(Local Variable Table)    │
+│  ├─ 0: this                        │
+│  ├─ 1: a (参数)                     │
+│  ├─ 2: b (参数)                     │
+│  ├─ 3: result (局部变量)            │
+│  └─ 4: doubled (局部变量)           │
+├─────────────────────────────────────┤
+│  操作数栈(Operand Stack)             │
+│  ├─ [栈顶]                         │
+│  ├─ ...                            │
+│  └─ [栈底]                         │
+├─────────────────────────────────────┤
+│  动态链接                           │
+├─────────────────────────────────────┤
+│  方法返回地址                        │
+└─────────────────────────────────────┘
+</code></pre>
+<p>栈操作指令：</p>
+<pre><code>NOP         // 无操作
+POP         // 弹出栈顶1个字长
+POP2        // 弹出栈顶2个字长
+DUP         // 复制栈顶1个字长
+DUP_X1      // 复制栈顶1个字长，插入到栈顶2个字长下
+DUP_X2      // 复制栈顶1个字长，插入到栈顶3个字长下
+DUP2        // 复制栈顶2个字长
+DUP2_X1     // 复制栈顶2个字长，插入到栈顶3个字长下
+DUP2_X2     // 复制栈顶2个字长，插入到栈顶4个字长下
+SWAP        // 交换栈顶两个字长
+</code></pre>
+<h2 id="asm字节码">ASM字节码</h2>
+<h3 id="类结构概述">类结构概述</h3>
+<h4 id="内部名">内部名</h4>
+<p>在已编译类中需要用内部名进行表示，一个类的内部名就是这个类的完全限定名，其中的<code>.</code>用<code>/</code>代替。例如：String的内部名为<code>java/lang/String</code>。</p>
+<h4 id="类型描述符">类型描述符</h4>
+<p>内部名只能用于类或接口类型。所有其他 Java 类型，比如字段类型，在已编译类中都是用</p>
+<p>类型描述符表示的</p>
+<table>
+<thead>
+<tr>
+<th>Java 类型</th>
+<th>类型描述符</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>boolean</td>
+<td>Z</td>
+</tr>
+<tr>
+<td>char</td>
+<td>C</td>
+</tr>
+<tr>
+<td>byte</td>
+<td>B</td>
+</tr>
+<tr>
+<td>short</td>
+<td>S</td>
+</tr>
+<tr>
+<td>int</td>
+<td>I</td>
+</tr>
+<tr>
+<td>float</td>
+<td>F</td>
+</tr>
+<tr>
+<td>Long</td>
+<td>J</td>
+</tr>
+<tr>
+<td>double</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Object</td>
+<td>Ljava/lang/Object;</td>
+</tr>
+<tr>
+<td>int[]</td>
+<td>[I</td>
+</tr>
+<tr>
+<td><code>Object[][]</code></td>
+<td>[[Ljava/lang/Object;</td>
+</tr>
+</tbody>
+</table>
+<p>基元类型的描述符是单个字符：<strong>Z</strong> 表示 <strong>boolean</strong>，<strong>C</strong> 表示 <strong>char</strong>，<strong>B</strong> 表示 <strong>byte</strong>，<strong>S</strong> 表示</p>
+<p><strong>short</strong>， <strong>I</strong> 表示 <strong>int</strong>，<strong>F</strong> 表示 <strong>float</strong>，<strong>J</strong> 表示 <strong>long</strong>，<strong>D</strong> 表示 <strong>double</strong>。一个类类型的描述符</p>
+<p>是这个类的 内部名， 前面加上字符 <strong>L</strong> ， 后面跟有一个分号。例如， <strong>String</strong> 的类型描述符为</p>
+<p><strong>Ljava/lang/String;</strong>。而一个数组类型的描述符是一个方括号后面跟有该数组元素类型的描</p>
+<p>述符。</p>
+<h4 id="方法描述符">方法描述符</h4>
+<p>方法描述符是一个类型描述符列表，它用一个字符串描述一个方法的参数类型和返回类型。 方</p>
+<p>法描述符以左括号开头，然后是每个形参的类型描述符，然后是一个右括号，接下来是返回类 型的</p>
+<p>类型描述符，如果该方法返回 <strong>void</strong>，则是 <strong>V</strong>（方法描述符中不包含方法的名字或参数名）。</p>
+<table>
+<thead>
+<tr>
+<th>源文件中的方法声明</th>
+<th>方法描述符</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>void m(int i, float f)</td>
+<td>(IF)V</td>
+</tr>
+<tr>
+<td>int m(Object o)</td>
+<td>(Ljava/lang/Object;)I</td>
+</tr>
+<tr>
+<td>int[] m(int i, String s)</td>
+<td>(ILjava/lang/String;)[I</td>
+</tr>
+</tbody>
+</table>
+<h3 id="type">Type</h3>
+<p>一个Type对象表示一种Java类型，既可以由类型描述符构造，也可以由Class对象构建。Type类还包含表示基元类型的静态变量。例如：Type.INT_TYPE是表示int类型的Type对象。</p>
+<p><strong>getInternalName</strong>方法返回一个Type的内部名。例如，Type.getType(String.class).getInternalName()给出String类的内部名，即“Java/lang/String”</p>
+<p><strong>getDescriptor</strong>方法返回一个Type的描述符，比如，在代码中可以不适用“Ljava/lang/String;”,直接Type.getType(String.class).getDescriptor()获取即可。</p>
+<p><strong>getArgumentTypes</strong>获取一个方法的参数类型</p>
+<p><strong>getReturnType</strong>获取方法的返回类型。</p>
+<h3 id="traceclassvisitor">TraceClassVisitor</h3>
+<p>​	要确认所生成或转换后的类符合你的预期，<strong>ClassWriter</strong> 返回的字母数组并没有什么真正</p>
+<p>的用处，因为它对人类来说是不可读的。如果有文本表示形式，那使用起来就容易多了。这正是</p>
+<p><strong>TraceClassVisitor</strong> 类提供的东西。从名字可以看出，这个类扩展了 <strong>ClassVisitor</strong></p>
+<p>类， 并生成所访问类的文本表示。<strong>TraceClassVisitor</strong> 可以将对其方</p>
+<p>法 的所有调用委托给另一个访问器，也可以把classVisitor的调用委托给<strong>TraceClassVisitor</strong>,比如在实现RASP时，我把<strong>ClassVisitor</strong>委托给了<strong>TraceClassVisitor</strong>，对修改后的指定方法进行打印：</p>
+<pre><code class="language-java">public class RASPTraceClassVisitor {
+
+	private final ClassReader cr;
+
+	private final CopyOnWriteArrayList&lt;RASPConfig&gt; raspConfigs;
+
+	private final String className;
+
+	public RASPTraceClassVisitor(String className, CopyOnWriteArrayList&lt;RASPConfig&gt; raspConfigs, byte[] classfileBuffer) {
+		this.className = className;
+		this.raspConfigs = raspConfigs;
+		this.cr = new ClassReader(classfileBuffer);
+	}
+
+	public void traceVisitor() {
+		TraceClassVisitor traceClassVisitor = new TraceClassVisitor(new PrintWriter(System.out));
+		cr.accept(new ClassVisitor(ASM9, traceClassVisitor) {
+			@Override
+			public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+				for (RASPConfig raspConfig : raspConfigs) {
+					if (raspConfig.getOriginClassName().equals(className)) {
+						if (raspConfig.getMethodName().equals(name)) {
+							if (raspConfig.getMethodDescriptor().equals(descriptor))
+								return traceClassVisitor.visitMethod(access, name, descriptor, signature, exceptions);
+						}
+					}
+				}
+				return null;
+			}
+		}, EXPAND_FRAMES);
+	}
+
+}
+</code></pre>
+<p>打印结果：</p>
+<pre><code class="language-java">// class version 52.0 (52)
+// access flags 0x21
+public class java/lang/Runtime {
+
+  // compiled from: Runtime.java
+
+  // access flags 0xA
+  private static Ljava/lang/Runtime; currentRuntime
+
+  // access flags 0x1
+  public exec(Ljava/lang/String;)Ljava/lang/Process; throws java/io/IOException 
+    TRYCATCHBLOCK L0 L1 L2 java/lang/RuntimeException
+   L0
+    ICONST_1
+    ANEWARRAY java/lang/Object
+    DUP
+    ICONST_0
+    ALOAD 1
+    AASTORE
+    ASTORE 2
+    ALOAD 0
+    ALOAD 2
+    ACONST_NULL
+    LDC &quot;java.lang.Runtime&quot;
+    LDC &quot;exec&quot;
+    LDC &quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;
+    LDC 2101440631
+    ICONST_1
+    LDC &quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;
+    INVOKESTATIC org/n1es/processor/BootstrapProcessor.bootstrapProcess (Ljava/lang/Object;[Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;)Lorg/n1es/common/hook/HookResult;
+    ASTORE 3
+    ALOAD 3
+    INVOKEVIRTUAL org/n1es/common/hook/HookResult.isAllowed ()Z
+    ISTORE 4
+    ILOAD 4
+    IFNE L3
+    ALOAD 3
+    INVOKEVIRTUAL org/n1es/common/hook/HookResult.getException ()Ljava/lang/Exception;
+    ATHROW
+   L3
+    LINENUMBER 347 L3
+   FRAME FULL [java/lang/Runtime java/lang/String [Ljava/lang/Object; org/n1es/common/hook/HookResult I] []
+    ALOAD 0
+    ALOAD 1
+    ACONST_NULL
+    ACONST_NULL
+    INVOKEVIRTUAL java/lang/Runtime.exec (Ljava/lang/String;[Ljava/lang/String;Ljava/io/File;)Ljava/lang/Process;
+    ASTORE 5
+    ALOAD 0
+    ALOAD 2
+    ALOAD 5
+    LDC &quot;java.lang.Runtime&quot;
+    LDC &quot;exec&quot;
+    LDC &quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;
+    LDC 2101440631
+    ICONST_2
+    LDC &quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;
+    INVOKESTATIC org/n1es/processor/BootstrapProcessor.bootstrapProcess (Ljava/lang/Object;[Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;)Lorg/n1es/common/hook/HookResult;
+    ASTORE 6
+    ALOAD 6
+    INVOKEVIRTUAL org/n1es/common/hook/HookResult.isAllowed ()Z
+    ISTORE 7
+    ILOAD 7
+    IFNE L4
+    ALOAD 6
+    INVOKEVIRTUAL org/n1es/common/hook/HookResult.getException ()Ljava/lang/Exception;
+    ATHROW
+   L4
+   FRAME FULL [java/lang/Runtime java/lang/String [Ljava/lang/Object; org/n1es/common/hook/HookResult I java/lang/Process org/n1es/common/hook/HookResult I] []
+    ALOAD 5
+   L1
+    ARETURN
+   L2
+   FRAME FULL [java/lang/Runtime java/lang/String] [java/lang/RuntimeException]
+    DUP
+    INVOKEVIRTUAL java/lang/RuntimeException.printStackTrace ()V
+    ATHROW
+    MAXSTACK = 9
+    MAXLOCALS = 8
+}
+在这里我们精准控制了需要printWriter处理的方法，只打印exec方法
+</code></pre>
+<h3 id="asmifier">ASMifier</h3>
+<p>这个类在访问一个已经存在的类时，会打印用ASM方式生成这个类的源代码，在你不知道如何用ASM生成某个已编译类，可以通过该类去试试。</p>
+<pre><code>ASMifier.main(new String[] { &quot;org.n1es.asm.RuntimeHook&quot; });
+结果：
+
+ClassWriter classWriter = new ClassWriter(0);
+FieldVisitor fieldVisitor;
+RecordComponentVisitor recordComponentVisitor;
+MethodVisitor methodVisitor;
+AnnotationVisitor annotationVisitor0;
+
+classWriter.visit(V1_8, ACC_PUBLIC | ACC_SUPER, &quot;org/n1es/asm/RuntimeHook&quot;, null, &quot;java/lang/Object&quot;, null);
+
+classWriter.visitSource(&quot;RuntimeHook.java&quot;, null);
+
+{
+methodVisitor = classWriter.visitMethod(ACC_PUBLIC, &quot;&lt;init&gt;&quot;, &quot;()V&quot;, null, null);
+methodVisitor.visitCode();
+Label label0 = new Label();
+methodVisitor.visitLabel(label0);
+methodVisitor.visitLineNumber(9, label0);
+methodVisitor.visitVarInsn(ALOAD, 0);
+methodVisitor.visitMethodInsn(INVOKESPECIAL, &quot;java/lang/Object&quot;, &quot;&lt;init&gt;&quot;, &quot;()V&quot;, false);
+methodVisitor.visitInsn(RETURN);
+Label label1 = new Label();
+methodVisitor.visitLabel(label1);
+methodVisitor.visitLocalVariable(&quot;this&quot;, &quot;Lorg/n1es/asm/RuntimeHook;&quot;, null, label0, label1, 0);
+methodVisitor.visitMaxs(1, 1);
+methodVisitor.visitEnd();
+}
+{
+methodVisitor = classWriter.visitMethod(ACC_PUBLIC, &quot;exec&quot;, &quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;, null, new String[] { &quot;java/io/IOException&quot; });
+methodVisitor.visitCode();
+Label label0 = new Label();
+Label label1 = new Label();
+Label label2 = new Label();
+methodVisitor.visitTryCatchBlock(label0, label1, label2, &quot;java/lang/RuntimeException&quot;);
+Label label3 = new Label();
+methodVisitor.visitTryCatchBlock(label0, label1, label3, &quot;java/lang/Exception&quot;);
+methodVisitor.visitLabel(label0);
+methodVisitor.visitLineNumber(13, label0);
+methodVisitor.visitInsn(ICONST_1);
+methodVisitor.visitTypeInsn(ANEWARRAY, &quot;java/lang/Object&quot;);
+methodVisitor.visitInsn(DUP);
+methodVisitor.visitInsn(ICONST_0);
+methodVisitor.visitVarInsn(ALOAD, 1);
+methodVisitor.visitInsn(AASTORE);
+methodVisitor.visitVarInsn(ASTORE, 2);
+Label label4 = new Label();
+methodVisitor.visitLabel(label4);
+methodVisitor.visitLineNumber(14, label4);
+methodVisitor.visitVarInsn(ALOAD, 0);
+methodVisitor.visitVarInsn(ALOAD, 2);
+methodVisitor.visitInsn(ACONST_NULL);
+methodVisitor.visitLdcInsn(&quot;java.lang.Runtime&quot;);
+methodVisitor.visitLdcInsn(&quot;exec&quot;);
+methodVisitor.visitLdcInsn(&quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;);
+methodVisitor.visitLdcInsn(new Integer(2101440631));
+methodVisitor.visitInsn(ICONST_1);
+methodVisitor.visitLdcInsn(&quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;);
+methodVisitor.visitMethodInsn(INVOKESTATIC, &quot;org/n1es/processor/BootstrapProcessor&quot;, &quot;bootstrapProcess&quot;, &quot;(Ljava/lang/Object;[Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;)Lorg/n1es/common/hook/HookResult;&quot;, false);
+methodVisitor.visitVarInsn(ASTORE, 3);
+Label label5 = new Label();
+methodVisitor.visitLabel(label5);
+methodVisitor.visitLineNumber(16, label5);
+methodVisitor.visitVarInsn(ALOAD, 3);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;org/n1es/common/hook/HookResult&quot;, &quot;isAllowed&quot;, &quot;()Z&quot;, false);
+methodVisitor.visitVarInsn(ISTORE, 4);
+Label label6 = new Label();
+methodVisitor.visitLabel(label6);
+methodVisitor.visitLineNumber(17, label6);
+methodVisitor.visitVarInsn(ILOAD, 4);
+Label label7 = new Label();
+methodVisitor.visitJumpInsn(IFNE, label7);
+Label label8 = new Label();
+methodVisitor.visitLabel(label8);
+methodVisitor.visitLineNumber(18, label8);
+methodVisitor.visitVarInsn(ALOAD, 3);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;org/n1es/common/hook/HookResult&quot;, &quot;getException&quot;, &quot;()Ljava/lang/Exception;&quot;, false);
+methodVisitor.visitInsn(ATHROW);
+methodVisitor.visitLabel(label7);
+methodVisitor.visitLineNumber(20, label7);
+methodVisitor.visitFrame(Opcodes.F_APPEND,3, new Object[] {&quot;[Ljava/lang/Object;&quot;, &quot;org/n1es/common/hook/HookResult&quot;, Opcodes.INTEGER}, 0, null);
+methodVisitor.visitMethodInsn(INVOKESTATIC, &quot;java/lang/Runtime&quot;, &quot;getRuntime&quot;, &quot;()Ljava/lang/Runtime;&quot;, false);
+methodVisitor.visitVarInsn(ALOAD, 1);
+methodVisitor.visitInsn(ACONST_NULL);
+methodVisitor.visitTypeInsn(CHECKCAST, &quot;[Ljava/lang/String;&quot;);
+methodVisitor.visitInsn(ACONST_NULL);
+methodVisitor.visitTypeInsn(CHECKCAST, &quot;java/io/File&quot;);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;java/lang/Runtime&quot;, &quot;exec&quot;, &quot;(Ljava/lang/String;[Ljava/lang/String;Ljava/io/File;)Ljava/lang/Process;&quot;, false);
+methodVisitor.visitVarInsn(ASTORE, 5);
+Label label9 = new Label();
+methodVisitor.visitLabel(label9);
+methodVisitor.visitLineNumber(21, label9);
+methodVisitor.visitVarInsn(ALOAD, 0);
+methodVisitor.visitVarInsn(ALOAD, 2);
+methodVisitor.visitVarInsn(ALOAD, 5);
+methodVisitor.visitLdcInsn(&quot;java.lang.Runtime&quot;);
+methodVisitor.visitLdcInsn(&quot;exec&quot;);
+methodVisitor.visitLdcInsn(&quot;(Ljava/lang/String;)Ljava/lang/Process;&quot;);
+methodVisitor.visitLdcInsn(new Integer(2101440631));
+methodVisitor.visitInsn(ICONST_2);
+methodVisitor.visitLdcInsn(&quot;org.n1es.rasp.agent.hook.interceptor.RuntimeExecInterceptor&quot;);
+methodVisitor.visitMethodInsn(INVOKESTATIC, &quot;org/n1es/processor/BootstrapProcessor&quot;, &quot;bootstrapProcess&quot;, &quot;(Ljava/lang/Object;[Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;)Lorg/n1es/common/hook/HookResult;&quot;, false);
+methodVisitor.visitVarInsn(ASTORE, 6);
+Label label10 = new Label();
+methodVisitor.visitLabel(label10);
+methodVisitor.visitLineNumber(22, label10);
+methodVisitor.visitVarInsn(ALOAD, 6);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;org/n1es/common/hook/HookResult&quot;, &quot;isAllowed&quot;, &quot;()Z&quot;, false);
+methodVisitor.visitVarInsn(ISTORE, 7);
+Label label11 = new Label();
+methodVisitor.visitLabel(label11);
+methodVisitor.visitLineNumber(23, label11);
+methodVisitor.visitVarInsn(ILOAD, 7);
+Label label12 = new Label();
+methodVisitor.visitJumpInsn(IFNE, label12);
+Label label13 = new Label();
+methodVisitor.visitLabel(label13);
+methodVisitor.visitLineNumber(24, label13);
+methodVisitor.visitVarInsn(ALOAD, 6);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;org/n1es/common/hook/HookResult&quot;, &quot;getException&quot;, &quot;()Ljava/lang/Exception;&quot;, false);
+methodVisitor.visitInsn(ATHROW);
+methodVisitor.visitLabel(label12);
+methodVisitor.visitLineNumber(26, label12);
+methodVisitor.visitFrame(Opcodes.F_APPEND,3, new Object[] {&quot;java/lang/Process&quot;, &quot;org/n1es/common/hook/HookResult&quot;, Opcodes.INTEGER}, 0, null);
+methodVisitor.visitVarInsn(ALOAD, 5);
+methodVisitor.visitLabel(label1);
+methodVisitor.visitInsn(ARETURN);
+methodVisitor.visitLabel(label2);
+methodVisitor.visitLineNumber(29, label2);
+methodVisitor.visitFrame(Opcodes.F_FULL, 2, new Object[] {&quot;org/n1es/asm/RuntimeHook&quot;, &quot;java/lang/String&quot;}, 1, new Object[] {&quot;java/lang/RuntimeException&quot;});
+methodVisitor.visitVarInsn(ASTORE, 2);
+Label label14 = new Label();
+methodVisitor.visitLabel(label14);
+methodVisitor.visitLineNumber(30, label14);
+methodVisitor.visitVarInsn(ALOAD, 2);
+methodVisitor.visitMethodInsn(INVOKEVIRTUAL, &quot;java/lang/RuntimeException&quot;, &quot;printStackTrace&quot;, &quot;()V&quot;, false);
+Label label15 = new Label();
+methodVisitor.visitLabel(label15);
+methodVisitor.visitLineNumber(31, label15);
+methodVisitor.visitVarInsn(ALOAD, 2);
+methodVisitor.visitInsn(ATHROW);
+methodVisitor.visitLabel(label3);
+methodVisitor.visitLineNumber(32, label3);
+methodVisitor.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] {&quot;java/lang/Exception&quot;});
+methodVisitor.visitVarInsn(ASTORE, 2);
+Label label16 = new Label();
+methodVisitor.visitLabel(label16);
+methodVisitor.visitLineNumber(33, label16);
+methodVisitor.visitTypeInsn(NEW, &quot;java/lang/RuntimeException&quot;);
+methodVisitor.visitInsn(DUP);
+methodVisitor.visitVarInsn(ALOAD, 2);
+methodVisitor.visitMethodInsn(INVOKESPECIAL, &quot;java/lang/RuntimeException&quot;, &quot;&lt;init&gt;&quot;, &quot;(Ljava/lang/Throwable;)V&quot;, false);
+methodVisitor.visitInsn(ATHROW);
+Label label17 = new Label();
+methodVisitor.visitLabel(label17);
+methodVisitor.visitLocalVariable(&quot;var5&quot;, &quot;Ljava/lang/Process;&quot;, null, label9, label2, 5);
+methodVisitor.visitLocalVariable(&quot;var6&quot;, &quot;Lorg/n1es/common/hook/HookResult;&quot;, null, label10, label2, 6);
+methodVisitor.visitLocalVariable(&quot;var7&quot;, &quot;Z&quot;, null, label11, label2, 7);
+methodVisitor.visitLocalVariable(&quot;var2&quot;, &quot;[Ljava/lang/Object;&quot;, null, label4, label2, 2);
+methodVisitor.visitLocalVariable(&quot;var3&quot;, &quot;Lorg/n1es/common/hook/HookResult;&quot;, null, label5, label2, 3);
+methodVisitor.visitLocalVariable(&quot;var4&quot;, &quot;Z&quot;, null, label6, label2, 4);
+methodVisitor.visitLocalVariable(&quot;var8&quot;, &quot;Ljava/lang/RuntimeException;&quot;, null, label14, label3, 2);
+methodVisitor.visitLocalVariable(&quot;e&quot;, &quot;Ljava/lang/Exception;&quot;, null, label16, label17, 2);
+methodVisitor.visitLocalVariable(&quot;this&quot;, &quot;Lorg/n1es/asm/RuntimeHook;&quot;, null, label0, label17, 0);
+methodVisitor.visitLocalVariable(&quot;var1&quot;, &quot;Ljava/lang/String;&quot;, null, label0, label17, 1);
+methodVisitor.visitMaxs(9, 8);
+methodVisitor.visitEnd();
+}
+classWriter.visitEnd();
+
+return classWriter.toByteArray();
+
+有了字节码的基础后，就可以找到自己需要的生成代码，还挺方便
+</code></pre>
+<h3 id="java虚拟机执行模型">Java虚拟机执行模型</h3>
+<p>​	Java代码是在线程内部执行的。每个线程都有自己的执行栈，栈由帧组成。每个帧表示一个方法调用：每次调用一个方法时，会将有一个新帧压入当前线程的执行栈。当方法正常返回或异常返回时，会将这个帧从执行栈中弹出（执行<strong>POP</strong>指令），执行过程在发出调用的方法中继续执行（这个方法的帧现在位于栈的顶端）。</p>
+<p>​	每一个帧包括俩部分：一个局部变量部分和一个操作数栈部分。局部变量部分包含可根据索引以随机顺序访问的变量。由名字可以看出，操作数栈部分是一个栈，其中包含了供字节码指令用作操作数的值。这意味着这个栈中的值只能按照后入先出的顺序访问。不能把操作数栈和线程的执行栈相混淆：执行栈中的每一帧都包含自己的操作数栈。</p>
+<h3 id="methodvisitor">MethodVisitor</h3>
+<p>visitCode和visitMaxs方法可用于检测该方法的字节代码在一个事件序列中的开始与结束。和类的情况一样，visitEnd方法也必须在最后调用，用于检测一个方法在一个事件序列中的结束。在ClassVisitor没有调用visitEnd方法时，MethodVisitor中的实例是完全独立的，可按任意顺序访问方法。</p>
+<p>ASM提供了三哥基于MethodVisitor API的核心组件，用于生成和转换方法:</p>
+<p>ClassReader类分析已编译方法的内容，在其accept方法的参数中传送了ClassVisitor，</p>
+<p>ClassReader类将针对这一ClassVisitor返回的MethodVIsitor对象调用相应方法。</p>
+<p>ClassWriter的visitMethod方法返回MethodVisitor接口的一个实现，它直接以二进制形式生成已编译方法。</p>
+<p><strong>MethodVisitor</strong> 类将它接收到的所有方法调用委托给另一个 <strong>MethodVisitor</strong> 方</p>
+<p>法。 可以将它看作一个事件筛选器。</p>
+<p>在ClassWriter中需要计算所有帧，如果使用new ClassWriter(0)创建一个类时，需要计算帧、局部变量与操作数栈的大小。使用 <code>visitFrame()</code> 插入帧（第一个参数用于压缩栈映射帧，以减少类文件的大小。JVM在验证字节码时，会根据这些帧类型来推断当前帧的状态），在方法结束前调用visitMaxs()计算最大栈深度、局部变量表大小。需要注意：在适当的位置调用<code>visitFrame</code>插入栈映射帧，确保每个跳转目标、异常处理块开始等位置都有帧。适用于对性能比较敏感的环境。推介使用<strong>COMPUTE_FRAMES</strong>自动处理所有帧，会有轻微的性能开销，但可以避免计算错误。（COMPUTE_MAXS选项会使ClassWriter的速度降低10%左右，使用COMPUTE_FRAMES会降低一半）</p>
+<pre><code>mv.visitFrame(
+    Opcodes.F_NEW,       // 帧类型
+    localCount,          // 局部变量表大小
+    localTypes,          // 局部变量类型数组
+    stackCount,          // 操作数栈大小
+    stackTypes           // 操作数栈类型数组
+);
+</code></pre>
+<h4 id="帧类型frame-type">帧类型（Frame Type）</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>F_NEW</code></td>
+<td style="text-align:left">完整描述帧（推荐使用）</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>F_SAME</code></td>
+<td style="text-align:left">与前一帧相同</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>F_SAME1</code></td>
+<td style="text-align:left">栈比前一帧多1个元素</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>F_APPEND</code></td>
+<td style="text-align:left">局部变量表比前一帧多k个元素</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>F_CHOP</code></td>
+<td style="text-align:left">局部变量表比前一帧少k个元素</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>F_FULL</code></td>
+<td style="text-align:left">完整描述帧（同F_NEW）</td>
+</tr>
+</tbody>
+</table>
+
+                    </div>
+                    <div class="toc-container">
+                        <ul class="markdownIt-TOC">
+<li><a href="#java%E5%AD%97%E8%8A%82%E7%A0%81asm%E5%AD%A6%E4%B9%A0">Java字节码+ASM学习</a>
+<ul>
+<li><a href="#java%E5%AD%97%E8%8A%82%E7%A0%81">Java字节码</a>
+<ul>
+<li><a href="#%E5%AD%97%E8%8A%82%E7%A0%81%E5%B8%B8%E9%87%8F%E8%A1%A8">字节码常量表</a></li>
+<li><a href="#%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E8%A1%A8">局部变量表</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4">数组操作指令</a></li>
+<li><a href="#%E6%A0%88%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4">栈操作指令</a></li>
+<li><a href="#%E6%95%B0%E5%AD%A6%E8%BF%90%E7%AE%97%E6%8C%87%E4%BB%A4">数学运算指令</a></li>
+<li><a href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E6%8C%87%E4%BB%A4">类型转换指令</a></li>
+<li><a href="#%E6%AF%94%E8%BE%83%E6%8C%87%E4%BB%A4">比较指令</a></li>
+<li><a href="#%E6%8E%A7%E5%88%B6%E6%B5%81%E6%8C%87%E4%BB%A4">控制流指令</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E6%8C%87%E4%BB%A4">方法调用指令</a></li>
+<li><a href="#%E5%AD%97%E6%AE%B5%E8%AE%BF%E9%97%AE%E6%8C%87%E4%BB%A4">字段访问指令</a></li>
+<li><a href="#%E5%AF%B9%E8%B1%A1%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4">对象操作指令</a></li>
+<li><a href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%8C%87%E4%BB%A4">异常处理指令</a></li>
+<li><a href="#%E5%90%8C%E6%AD%A5%E6%8C%87%E4%BB%A4">同步指令</a></li>
+<li><a href="#%E5%85%B6%E4%BB%96%E6%8C%87%E4%BB%A4">其他指令</a></li>
+<li><a href="#%E7%A4%BA%E4%BE%8B%E5%88%86%E6%9E%90">示例分析</a></li>
+<li><a href="#class%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F">Class文件格式</a></li>
+<li><a href="#jvm%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA">JVM运行时数据区</a><br>
+*
+<ul>
+<li><a href="#%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E5%88%92%E5%88%86">内存区域划分</a></li>
+<li><a href="#%E6%A0%88%E5%B8%A7%E7%BB%93%E6%9E%84%E8%AF%A6%E8%A7%A3">栈帧结构详解</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#asm%E5%AD%97%E8%8A%82%E7%A0%81">ASM字节码</a>
+<ul>
+<li><a href="#%E7%B1%BB%E7%BB%93%E6%9E%84%E6%A6%82%E8%BF%B0">类结构概述</a>
+<ul>
+<li><a href="#%E5%86%85%E9%83%A8%E5%90%8D">内部名</a></li>
+<li><a href="#%E7%B1%BB%E5%9E%8B%E6%8F%8F%E8%BF%B0%E7%AC%A6">类型描述符</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E6%8F%8F%E8%BF%B0%E7%AC%A6">方法描述符</a></li>
+</ul>
+</li>
+<li><a href="#type">Type</a></li>
+<li><a href="#traceclassvisitor">TraceClassVisitor</a></li>
+<li><a href="#asmifier">ASMifier</a></li>
+<li><a href="#java%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%9E%8B">Java虚拟机执行模型</a></li>
+<li><a href="#methodvisitor">MethodVisitor</a>
+<ul>
+<li><a href="#%E5%B8%A7%E7%B1%BB%E5%9E%8Bframe-type">帧类型（Frame Type）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        
+            <div class="next-post">
+                <div class="next gt-c-content-color-first">下一篇</div>
+                <a href="https://n1es.org/kPxr0dr-to/" class="post-title gt-a-link">
+                    RASP (Runtime Application Self-Protection) 实现指南
+                </a>
+            </div>
+        
+
+        
+
+        
+            
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js"></script>
+<script>
+    // md5.min.js
+    !function(n){
+        "use strict";
+        function d(n,t){var r=(65535&n)+(65535&t);return(n>>16)+(t>>16)+(r>>16)<<16|65535&r}
+        function f(n,t,r,e,o,u){return d((c=d(d(t,n),d(e,u)))<<(f=o)|c>>>32-f,r);var c,f}
+        function l(n,t,r,e,o,u,c){return f(t&r|~t&e,n,t,o,u,c)}
+        function v(n,t,r,e,o,u,c){return f(t&e|r&~e,n,t,o,u,c)}
+        function g(n,t,r,e,o,u,c){return f(t^r^e,n,t,o,u,c)}
+        function m(n,t,r,e,o,u,c){return f(r^(t|~e),n,t,o,u,c)}
+        function i(n,t){var r,e,o,u,c;n[t>>5]|=128<<t%32,n[14+(t+64>>>9<<4)]=t;var f=1732584193,i=-271733879,a=-1732584194,h=271733878;for(r=0;r<n.length;r+=16)f=l(e=f,o=i,u=a,c=h,n[r],7,-680876936),h=l(h,f,i,a,n[r+1],12,-389564586),a=l(a,h,f,i,n[r+2],17,606105819),i=l(i,a,h,f,n[r+3],22,-1044525330),f=l(f,i,a,h,n[r+4],7,-176418897),h=l(h,f,i,a,n[r+5],12,1200080426),a=l(a,h,f,i,n[r+6],17,-1473231341),i=l(i,a,h,f,n[r+7],22,-45705983),f=l(f,i,a,h,n[r+8],7,1770035416),h=l(h,f,i,a,n[r+9],12,-1958414417),a=l(a,h,f,i,n[r+10],17,-42063),i=l(i,a,h,f,n[r+11],22,-1990404162),f=l(f,i,a,h,n[r+12],7,1804603682),h=l(h,f,i,a,n[r+13],12,-40341101),a=l(a,h,f,i,n[r+14],17,-1502002290),f=v(f,i=l(i,a,h,f,n[r+15],22,1236535329),a,h,n[r+1],5,-165796510),h=v(h,f,i,a,n[r+6],9,-1069501632),a=v(a,h,f,i,n[r+11],14,643717713),i=v(i,a,h,f,n[r],20,-373897302),f=v(f,i,a,h,n[r+5],5,-701558691),h=v(h,f,i,a,n[r+10],9,38016083),a=v(a,h,f,i,n[r+15],14,-660478335),i=v(i,a,h,f,n[r+4],20,-405537848),f=v(f,i,a,h,n[r+9],5,568446438),h=v(h,f,i,a,n[r+14],9,-1019803690),a=v(a,h,f,i,n[r+3],14,-187363961),i=v(i,a,h,f,n[r+8],20,1163531501),f=v(f,i,a,h,n[r+13],5,-1444681467),h=v(h,f,i,a,n[r+2],9,-51403784),a=v(a,h,f,i,n[r+7],14,1735328473),f=g(f,i=v(i,a,h,f,n[r+12],20,-1926607734),a,h,n[r+5],4,-378558),h=g(h,f,i,a,n[r+8],11,-2022574463),a=g(a,h,f,i,n[r+11],16,1839030562),i=g(i,a,h,f,n[r+14],23,-35309556),f=g(f,i,a,h,n[r+1],4,-1530992060),h=g(h,f,i,a,n[r+4],11,1272893353),a=g(a,h,f,i,n[r+7],16,-155497632),i=g(i,a,h,f,n[r+10],23,-1094730640),f=g(f,i,a,h,n[r+13],4,681279174),h=g(h,f,i,a,n[r],11,-358537222),a=g(a,h,f,i,n[r+3],16,-722521979),i=g(i,a,h,f,n[r+6],23,76029189),f=g(f,i,a,h,n[r+9],4,-640364487),h=g(h,f,i,a,n[r+12],11,-421815835),a=g(a,h,f,i,n[r+15],16,530742520),f=m(f,i=g(i,a,h,f,n[r+2],23,-995338651),a,h,n[r],6,-198630844),h=m(h,f,i,a,n[r+7],10,1126891415),a=m(a,h,f,i,n[r+14],15,-1416354905),i=m(i,a,h,f,n[r+5],21,-57434055),f=m(f,i,a,h,n[r+12],6,1700485571),h=m(h,f,i,a,n[r+3],10,-1894986606),a=m(a,h,f,i,n[r+10],15,-1051523),i=m(i,a,h,f,n[r+1],21,-2054922799),f=m(f,i,a,h,n[r+8],6,1873313359),h=m(h,f,i,a,n[r+15],10,-30611744),a=m(a,h,f,i,n[r+6],15,-1560198380),i=m(i,a,h,f,n[r+13],21,1309151649),f=m(f,i,a,h,n[r+4],6,-145523070),h=m(h,f,i,a,n[r+11],10,-1120210379),a=m(a,h,f,i,n[r+2],15,718787259),i=m(i,a,h,f,n[r+9],21,-343485551),f=d(f,e),i=d(i,o),a=d(a,u),h=d(h,c);return[f,i,a,h]}
+        function a(n){var t,r="",e=32*n.length;for(t=0;t<e;t+=8)r+=String.fromCharCode(n[t>>5]>>>t%32&255);return r}
+        function h(n){var t,r=[];for(r[(n.length>>2)-1]=void 0,t=0;t<r.length;t+=1)r[t]=0;var e=8*n.length;for(t=0;t<e;t+=8)r[t>>5]|=(255&n.charCodeAt(t/8))<<t%32;return r}
+        function e(n){var t,r,e="0123456789abcdef",o="";for(r=0;r<n.length;r+=1)t=n.charCodeAt(r),o+=e.charAt(t>>>4&15)+e.charAt(15&t);return o}
+        function r(n){return unescape(encodeURIComponent(n))}
+        function o(n){return a(i(h(t=r(n)),8*t.length));var t}
+        function u(n,t){return function(n,t){var r,e,o=h(n),u=[],c=[];for(u[15]=c[15]=void 0,16<o.length&&(o=i(o,8*n.length)),r=0;r<16;r+=1)u[r]=909522486^o[r],c[r]=1549556828^o[r];return e=i(u.concat(h(t)),512+8*t.length),a(i(c.concat(e),640))}(r(n),r(t))}
+        function t(n,t,r){return t?r?u(t,n):e(u(t,n)):r?o(n):e(o(n))}
+        "function"==typeof define&&define.amd?define(function(){return t}):"object"==typeof module&&module.exports?module.exports=t:n.md5=t;
+    }(this);
+</script>
+
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '4d3423e48bbe96f523ec',
+    clientSecret: 'af6d0d215def347aa32591adde071875bd456f3f',
+    repo: 'niespanda.github.io',
+    owner: 'niespanda',
+    admin: ['niespanda'],
+    id: md5(location.pathname),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false       // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+            
+
+            
+        
+
+        
+
+        <div class="site-footer gt-c-content-color-first">
+    <div class="slogan gt-c-content-color-first">Shining is not the sun's patent, you also may shine.</div>
+    <div class="social-container">
+        
+            
+                <a href="https://github.com/niespanda/" target="_blank">
+                    <i class="fab fa-github gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+                <a href="https://twitter.com/niespanda" target="_blank">
+                    <i class="fab fa-twitter gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    </div>
+    <div class="footer-info">
+        认清差距、低头赶路
+    </div>
+    <div>
+        Powered by <a
+                href="https://github.com/niespanda" target="_blank">n1es | <a href="https://n1es.org/atom.xml" target="_blank">RSS</a></a>
+    </div>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://n1es.org</id>
+    <title>n1es</title>
+    <updated>2025-11-28T12:11:38.875Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://n1es.org"/>
+    <link rel="self" href="https://n1es.org/atom.xml"/>
+    <subtitle>Shining is not the sun&apos;s patent, you also may shine.</subtitle>
+    <logo>https://n1es.org/images/avatar.png</logo>
+    <icon>https://n1es.org/favicon.ico</icon>
+    <rights>All rights reserved 2025, n1es</rights>
+    <entry>
+        <title type="html"><![CDATA[Apache Causeway 反序列化远程代码执行漏洞分析]]></title>
+        <id>https://n1es.org/84iGKfY1OA/</id>
+        <link href="https://n1es.org/84iGKfY1OA/">
+        </link>
+        <updated>2025-11-28T12:00:15.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Java反序列化]]></title>
+        <id>https://n1es.org/hE-DX6heHB/</id>
+        <link href="https://n1es.org/hE-DX6heHB/">
+        </link>
+        <updated>2025-10-23T07:43:34.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Java字节码指令+ASM记录]]></title>
+        <id>https://n1es.org/PslE-Rq5XJ/</id>
+        <link href="https://n1es.org/PslE-Rq5XJ/">
+        </link>
+        <updated>2025-09-09T12:40:16.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[RASP (Runtime Application Self-Protection) 实现指南]]></title>
+        <id>https://n1es.org/kPxr0dr-to/</id>
+        <link href="https://n1es.org/kPxr0dr-to/">
+        </link>
+        <updated>2025-09-09T07:59:13.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Logback 完整使用指南]]></title>
+        <id>https://n1es.org/AVF_XJh7u-/</id>
+        <link href="https://n1es.org/AVF_XJh7u-/">
+        </link>
+        <updated>2025-09-09T07:52:44.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[SQL注入详解]]></title>
+        <id>https://n1es.org/9c67zoY6-c/</id>
+        <link href="https://n1es.org/9c67zoY6-c/">
+        </link>
+        <updated>2025-05-25T07:19:20.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[AJP 任意文件读取\包含]]></title>
+        <id>https://n1es.org/iBOP_UdPF/</id>
+        <link href="https://n1es.org/iBOP_UdPF/">
+        </link>
+        <updated>2023-04-03T06:42:31.000Z</updated>
+    </entry>
+</feed>
